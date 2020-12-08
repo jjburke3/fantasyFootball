@@ -5,6 +5,7 @@ create table refData.playerIds
 (
 	playerId int primary key auto_increment,
     espnId int,
+	statsId int,
     depthChartsId int,
     injuryId int,
     playerName varchar(50),
@@ -15,6 +16,7 @@ create table refData.playerNames
 (
 	playerId int,
     playerName varchar(50),
+	playerApprox varchar(50),
     playerYear smallint,
     playerTeam tinyint,
     playerPosition varchar(15),
