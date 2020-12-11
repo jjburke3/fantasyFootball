@@ -23,6 +23,7 @@ def pullLeagueData(year,week,conn):
         print('failed to authorize')
 
     teams = getTeamId(conn)
+    players = getPlayerId(year,conn,espn=True)
     league = client.get_league(fantasy_league['league_id'], year)
     sql1 = InsertTable("la_liga_data.playerPoints")
     sql = """insert into la_liga_data.pointsScored values %s
@@ -89,13 +90,19 @@ def pullLeagueData(year,week,conn):
 
         for i, player in enumerate(matchup['playerList']):
             try:
-                print(teams.teamId(player['playerTeam'],conn))
+                teamNumber = teams.teamId(player['playerTeam'],conn)
+                playerNumber = players.playerId([player['playerName'].replace("'","\\'"),
+                                                     str(teamNumber),
+                                                     player['playerPos'],
+                                                     str(season)],
+                                                      conn,espnId=player['playerId'])
+
                 sql1.appendRow([[str(season),''], ##season value
                                 [str(week),''], ## week value
-                                [teamName,'string'], ## team value
+                                [teamNumber,''], ## team value
                                 [str(i),''], ## player slot number
                                 [opp,'string'],## vs team
-                                ## playerId
+                                [playerNumber,''],## playerId
                                 [str(player['playerId']),''],## playerEspnId
                                 [str(teams.teamId(player['playerTeam'],conn)),''],## playerNfl Team
                                 [player['slot'],'string'],## player slot
@@ -103,6 +110,8 @@ def pullLeagueData(year,week,conn):
                                 [str(player['Points']),''],## player points
                                 ['current_timestamp()','']## create date time
                                 ])
+                print(sql1.returnStatement())
+
                                 
                 sqlInsert += ("(" + str(season) + "," +
                              str(week) + "," +
@@ -120,8 +129,8 @@ def pullLeagueData(year,week,conn):
                               "null," +
                               str(player['Points']) + "," +
                               "current_timestamp()),")
-            except:
-                True
+            except Exception as e:
+                print(str(e))
 
         
                              

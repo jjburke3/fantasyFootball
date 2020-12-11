@@ -3,7 +3,7 @@
 
 create table refData.playerIds
 (
-	playerId int primary key auto_increment,
+	playerId int primary key,
     espnId int,
 	statsId int,
     depthChartsId int,
@@ -20,15 +20,17 @@ create table refData.playerNames
     playerYear smallint,
     playerTeam tinyint,
     playerPosition varchar(15),
-	playerString varchar(75),
+	playerString varchar(750),
 	multipleSameName boolean,
+	primary key(playerId, playerString),
     index(playerName,playerYear,playerTeam, playerPosition),
-	index(playerString)
+	index(playerString),
+	index(playerId)
 );
 
 create table refData.nflTeams
 (
-	teamId tinyInt primary key auto_increment,
+	teamId Int primary key,
 	teamName varchar(25),
 	teamAbbrv varchar(7)
 );
@@ -37,5 +39,6 @@ create table refData.nflTeamVariations
 (
 	teamId tinyint,
 	teamVariation varchar(35),
-	index(teamVariation)
+	primary key(teamId, teamVariation),
+	index(teamVariation), index(teamId)
 );
