@@ -6,7 +6,7 @@ create table refData.playerIds
 	playerId int primary key,
     espnId int,
 	statsId int,
-    depthChartsId int,
+    depthChartsId varchar(10),
     injuryId int,
     playerName varchar(50),
     index(espnId), index(depthChartsId), index(injuryId)

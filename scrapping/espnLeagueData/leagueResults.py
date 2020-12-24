@@ -1,4 +1,5 @@
-
+## file returns sql statement text string run in weeklyDataLeague file
+## file is passed year and week as integers, and the defined connection
 import sys
 sys.path.insert(0,'../..')
 sys.path.insert(0,'../../dbConn')
@@ -22,32 +23,27 @@ def pullLeagueData(year,week,conn):
     except AuthorizationError:
         print('failed to authorize')
 
+    ## pull in current list of all teams to get id numbers
     teams = getTeamId(conn)
+
+    ## pull in current list of all players to get id numbers
+    ## used espn ids if available
     players = getPlayerId(year,conn,espn=True)
+    
     league = client.get_league(fantasy_league['league_id'], year)
+
+    ## create insert objects for both individual player scores table
+    ## and weekly wins table
     sql1 = InsertTable("la_liga_data.playerPoints")
-    sql = """insert into la_liga_data.pointsScored values %s
-            on duplicate key update
-            vsTeam = values(vsTeam),
-            player = values(player),
-            playerTeam = values(playerTeam),
-            playerId = values(playerId),
-            playerSlot = values(playerSlot),
-            playerPosition = values(playerPosition),
-            playerPosition2 = values(playerPosition2),
-            opponent = values(opponent),
-            points = values(points),
-            dataCreate = current_timestamp();"""
-    sql2 = """insert into la_liga_data.wins values %s
-            on duplicate key update
-            winPoints = values(winPoints),
-            winPointsAgs = values(winPointsAgs),
-            winWin = values(winWin),
-            winLoss = values(winLoss),
-            winTie = values(winTie),
-            dataCreate = current_timestamp();"""
-    sqlInsert = ''
-    sqlInsert2 = ''
+    sqlWins = InsertTable("la_ligaData.wins")
+
+    sql1.updateStatement['playerVsTeam','playerId','playerESPNId',
+                         'playerFNLTeam','playerSlot','playerPosition',
+                         'playerPoints','dataCreateDate']
+
+    sqlWins.updateStatement['winPoints','winPointsAgs','winWin',
+                            'winLoss','winTie','dataCreate']
+
     for team in range(1,15):
         matchup = league.boxscore(week=week,team=team)
         teamId = {1 : 'Andrew Lamb',
@@ -76,17 +72,18 @@ def pullLeagueData(year,week,conn):
         loss = int(teamPoints < oppPoints)
         tie = int(teamPoints == oppPoints)
 
-        sqlInsert2 += ("(" + str(season) + "," +
-                       str(week) + "," +
-                       "'" + teamName + "'," +
-                       "'" + opp + "'," +
-                       str(teamPoints) + "," +
-                       str(oppPoints) + "," +
-                       str(win) + "," +
-                       str(loss) + "," +
-                       str(tie) + "," +
-                       "null," +
-                       "current_timestamp()),")
+        sqlWins.appendRow([[str(season),''],
+                           [str(week),''],
+                           [teamName,'string'],
+                           [opp,'string'],
+                           [str(teamPoints),''],
+                           [str(oppPoints),''],
+                           [str(win),''],
+                           [str(loss),''],
+                           [str(tie),''],
+                           ['NULL',''],
+                           ['current_timestamp()','']
+                           ])
 
         for i, player in enumerate(matchup['playerList']):
             try:
@@ -110,25 +107,6 @@ def pullLeagueData(year,week,conn):
                                 [str(player['Points']),''],## player points
                                 ['current_timestamp()','']## create date time
                                 ])
-                print(sql1.returnStatement())
-
-                                
-                sqlInsert += ("(" + str(season) + "," +
-                             str(week) + "," +
-                             "'" + teamName + "'," +
-                             str(i) + "," +
-                             "'" + opp + "'," +
-                             "'" + player['playerName'].replace("'","_") + "'," +
-                             str(player['playerId']) + "," +
-                             "'" + fullName[player['playerTeam']] + "'," +
-                              "'" + player['slot'] + "'," +
-                              "'" + player['playerPos'] + "'," +
-                              "null," +
-                              "null," +
-                              "null," +
-                              "null," +
-                              str(player['Points']) + "," +
-                              "current_timestamp()),")
             except Exception as e:
                 print(str(e))
 
@@ -143,5 +121,5 @@ def pullLeagueData(year,week,conn):
     sqlInsert = sqlInsert[:-1]
     sqlInsert2 = sqlInsert2[:-1]
     print(sql1.returnStatement())
-    return [sql % sqlInsert, sql2 % sqlInsert2]
+    return [sql1.returnStatement(), sqlWins.returnStatement()]
 
