@@ -1,4 +1,24 @@
 -- table for nfl schedule
+create table scrapped_data2.nflSchedule
+(
+	nflSeason int,
+	nflWeek int,
+	nflWeekId int,
+	nflDate date,
+	nflTime time,
+	nflHomeTeam int,
+	nflRoadTeam int,
+	nflHomeScore int,
+	nflRoadScore int,
+	nflHomeYards int,
+	nflRoadYards int,
+	nflHomeTO int,
+	nflRoadTO int,
+	createDateTime datetime,
+	primary key (nflSeason, nflWeek,nflWeekId),
+	index(nflHomeTeam),
+	index(nflRoadTeam)
+);
 
 -- table for weekly player stats
 

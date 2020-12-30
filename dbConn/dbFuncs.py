@@ -12,7 +12,7 @@ class InsertTable:
         ## declare initial statement that contains table to be inserted into
         self.sqlStatement = "insert into %s values " % tableName
         self.rows = ""
-        self.updateStatement = ""
+        self.updateStatementText = ""
 
     def appendRow(self, dataArray):
         ## function run on each row of data to be inserted
@@ -39,15 +39,15 @@ class InsertTable:
 
     def updateStatement(self, columnArray):
         ## optional; only run if table has entries that might be updated
-        self.updateStatement = " on duplicate key update "
+        self.updateStatementText = " on duplicate key update "
         for column in columnArray:
-            self.updateStatement += (" %s = value(%s)," % (column,column))
+            self.updateStatementText += (" %s = values(%s)," % (column,column))
 
         
 
     def returnStatement(self):
 
-        return self.sqlStatement + self.rows[:-1] + self.updateStatement[:-1]
+        return self.sqlStatement + self.rows[:-1] + self.updateStatementText[:-1]
 
 ## return team ids for all data pulled
 ## attempts matches using all possible spellings of team names
