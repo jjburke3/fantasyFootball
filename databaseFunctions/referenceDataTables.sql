@@ -42,3 +42,11 @@ create table refData.nflTeamVariations
 	primary key(teamId, teamVariation),
 	index(teamVariation), index(teamId)
 );
+
+create table refData.playerName_errors
+(
+	errorId int primary key auto_increment,
+	error_desc text,
+	error_player text,
+	error_datetime datetime
+);

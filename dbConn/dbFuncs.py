@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+import math
 import pymysql
 import re
 import traceback
@@ -93,7 +95,13 @@ class getTeamId(object):
 
 class getPlayerId:
     def __init__(self, year, conn, espn=False, depthChart=False,injury=False,stats=False):
-        self.playerDict = pd.read_sql("select lower(playerString) as playerString, playerId from refData.playerNames where playerYear = %d" % year,
+        self.playerDict = pd.read_sql('''select lower(playerString) as playerString, b.playerId,
+                                        espnId, statsId, depthChartsId,injuryId
+
+                                      from refData.playerNames b
+                                      join refData.playerIds a on a.playerId = b.playerId
+
+                                      where playerYear = %d''' % year,
                                      con=conn,index_col='playerString').to_dict('index')
 
         self.espnDict = {}
@@ -165,115 +173,119 @@ class getPlayerId:
         
         c = conn.cursor()
         playerId = None
-        ## check if player exists in database for different year
-        c.execute('''select a.playerId from refData.playerNames a
-                    %s
-                    where a.playerName = '%s'
-                    and playerTeam = %s
-                    and playerPosition in ('%s','%s')
-                    and playerYear between %s - 2 and %s''' %
-                  (idCheck, playerName[0], str(playerName[1]),
-                   positionMatch,playerName[2], str(playerName[3]), str(playerName[3])))
-        result = c.fetchone()
-        if result != None:
-            playerId = result[0]
-            c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
-                       str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
-            if anyId:
-                c.execute(idUpdate % playerId)
-            conn.commit()
-            return playerId
-        ## check if similar spelling but same team and position and last two years
-        c.execute('''select a.playerId from refData.playerNames a
-                    %s
-                    where a.playerApprox = '%s'
-                    and playerTeam = %s
-                    and playerPosition in ('%s','%s')
-                    and playerYear between  %s - 1 and %s''' %
-                  (idCheck, playerApprox, str(playerName[1]),
-                   positionMatch,playerName[2], str(playerName[3]),str(playerName[3])))
-        result = c.fetchone()
-        if result != None:
-            playerId = result[0]
-            c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
-                       str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
-            if anyId:
-                c.execute(idUpdate % playerId)
-            conn.commit()
-            return playerId
-        ## check if same spelling but different team
-        c.execute('''select a.playerId from refData.playerNames a
-                    %s
-                    where a.playerName = '%s'
-                    and playerPosition in ('%s','%s')
-                    and playerYear = %s''' %
-                  (idCheck, playerName[0], 
-                   positionMatch,playerName[2], str(playerName[3])))
-        result = c.fetchone()
-        if result != None:
-            playerId = result[0]
-            c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
-                       str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
-            if anyId:
-                c.execute(idUpdate % playerId)
-            conn.commit()
-            return playerId
+        try:
+            ## check if player exists in database for different year
+            c.execute('''select a.playerId from refData.playerNames a
+                        %s
+                        where a.playerName = '%s'
+                        and playerTeam = %s
+                        and playerPosition in ('%s','%s')
+                        and playerYear between %s - 2 and %s''' %
+                      (idCheck, playerName[0], str(playerName[1]),
+                       positionMatch,playerName[2], str(playerName[3]), str(playerName[3])))
+            result = c.fetchone()
+            if result != None:
+                playerId = result[0]
+                c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
+                           str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
+                if anyId:
+                    c.execute(idUpdate % playerId)
+                conn.commit()
+                return playerId
+            ## check if similar spelling but same team and position and last two years
+            c.execute('''select a.playerId from refData.playerNames a
+                        %s
+                        where a.playerApprox = '%s'
+                        and playerTeam = %s
+                        and playerPosition in ('%s','%s')
+                        and playerYear between  %s - 1 and %s''' %
+                      (idCheck, playerApprox, str(playerName[1]),
+                       positionMatch,playerName[2], str(playerName[3]),str(playerName[3])))
+            result = c.fetchone()
+            if result != None:
+                playerId = result[0]
+                c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
+                           str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
+                if anyId:
+                    c.execute(idUpdate % playerId)
+                conn.commit()
+                return playerId
+            ## check if same spelling but different team
+            c.execute('''select a.playerId from refData.playerNames a
+                        %s
+                        where a.playerName = '%s'
+                        and playerPosition in ('%s','%s')
+                        and playerYear = %s''' %
+                      (idCheck, playerName[0], 
+                       positionMatch,playerName[2], str(playerName[3])))
+            result = c.fetchone()
+            if result != None:
+                playerId = result[0]
+                c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
+                           str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
+                if anyId:
+                    c.execute(idUpdate % playerId)
+                conn.commit()
+                return playerId
 
-        ## check if same spelling but different position
-        c.execute('''select a.playerId from refData.playerNames a
-                    %s
-                    where a.playerName = '%s'
-                    and playerTeam = %s
-                    and playerYear = %s''' %
-                  (idCheck, playerName[0], 
-                   str(playerName[1]), str(playerName[3])))
-        result = c.fetchone()
-        if result != None:
-            playerId = result[0]
+            ## check if same spelling but different position
+            c.execute('''select a.playerId from refData.playerNames a
+                        %s
+                        where a.playerName = '%s'
+                        and playerTeam = %s
+                        and playerYear = %s''' %
+                      (idCheck, playerName[0], 
+                       str(playerName[1]), str(playerName[3])))
+            result = c.fetchone()
+            if result != None:
+                playerId = result[0]
+                c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
+                           str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
+                if anyId:
+                    c.execute(idUpdate % playerId)
+                conn.commit()
+                return playerId
+
+            ## check if similar spelling and no other similar spellings
+            c.execute('''select a.playerId from refData.playerNames a
+                        %s
+                        where a.playerApprox = '%s' and a.playerYear between %s - 2 and %s
+                        and (select count(distinct playerId) from refData.playerNames c
+                            where a.playerApprox = c.playerApprox) = 1
+                        and (select max(maxCount) from refData.playerInstances where instanceName = a.playerApprox
+                        and instanceYear between %s - 1 and %s) = 1
+                        ''' %
+                      (idCheck, playerApprox,str(playerName[3]),str(playerName[3]),
+                       str(playerName[3]),str(playerName[3])))
+            result = c.fetchone()
+            if result != None:
+                playerId = result[0]
+                c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
+                           str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
+                if anyId:
+                    c.execute(idUpdate % playerId)
+                conn.commit()
+                return playerId
+
+            ## add player to database
+            c.execute("select max(playerId) from refData.playerIds")
+            result = c.fetchone()
+            if result[0] != None:
+                playerId = result[0] + 1
+            else:
+                playerId = 0
+            c.execute("insert into refData.playerIds values (%s, %s, %s, %s, %s, '%s')" %
+                      (str(playerId), str(espnId), str(statsId), str(depthChartId),
+                       str(injuryId), playerName[0]))
             c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
                        str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
-            if anyId:
-                c.execute(idUpdate % playerId)
             conn.commit()
+        
             return playerId
-
-        ## check if similar spelling and no other similar spellings
-        c.execute('''select a.playerId from refData.playerNames a
-                    %s
-                    where a.playerApprox = '%s' and a.playerYear between %s - 2 and %s
-                    and (select count(distinct playerId) from refData.playerNames c
-                        where a.playerApprox = c.playerApprox) = 1
-                    and (select max(maxCount) from refData.playerInstances where instanceName = a.playerApprox
-                    and instanceYear between %s - 1 and %s) = 1
-                    ''' %
-                  (idCheck, playerApprox,str(playerName[3]),str(playerName[3]),
-                   str(playerName[3]),str(playerName[3])))
-        result = c.fetchone()
-        if result != None:
-            playerId = result[0]
-            c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
-                       str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
-            if anyId:
-                c.execute(idUpdate % playerId)
+        except Exception as e:
+            c.execute("insert into refData.playerName_errors values (null, %s, %s, current_timestamp())" % (str(e).replace("'","\\'"), '-'.join(playerName).replace("'","\\'")))
             conn.commit()
-            return playerId
-
-        ## add player to database
-        c.execute("select max(playerId) from refData.playerIds")
-        result = c.fetchone()
-        if result[0] != None:
-            playerId = result[0] + 1
-        else:
-            playerId = 0
-        c.execute("insert into refData.playerIds values (%s, %s, %s, %s, %s, '%s')" %
-                  (str(playerId), str(espnId), str(statsId), str(depthChartId),
-                   str(injuryId), playerName[0]))
-        c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
-                   str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
-        conn.commit()
-    
-        return playerId
-
+            return -999999
 
     def _insertNameString(self, id, name, approx, year, team, position, totalString, multiSameName):
         return ("insert into refData.playerNames values(%s, '%s', '%s', %s, %s, '%s', '%s', %s)" %
@@ -291,7 +303,38 @@ class getPlayerId:
         elif statsId in self.statsDict:
             return self.statsDict[statsId]['playerId']
         elif '-'.join(playerName).lower() in self.playerDict:
-            return self.playerDict['-'.join(playerName).lower()]['playerId']
+            playerEntry = self.playerDict['-'.join(playerName).lower()]
+            c = conn.cursor()
+            if statsId != 'NULL':
+                if playerEntry['statsId'] is None or math.isnan(playerEntry['statsId']):
+                    c.execute("update refData.playerIds set statsId = %d where playerId = %d" % (statsId,playerEntry['playerId']))
+                    conn.commit()
+                    return playerEntry['playerId']
+                else:
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
+            elif espnId != 'NULL':
+                if playerEntry['espnId'] is None or math.isnan(playerEntry['espnId']):
+                    c.execute("update refData.playerIds set espnId = %d where playerId = %d" % (espnId,playerEntry['playerId']))
+                    conn.commit()
+                    return playerEntry['playerId']
+                else:
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
+            elif depthChartId != 'NULL':
+                if playerEntry['depthChartsId'] is None or math.isnan(playerEntry['depthChartsId']):
+                    c.execute("update refData.playerIds set depthChartsId = %d where playerId = %d" % (depthChartId,playerEntry['playerId']))
+                    conn.commit()
+                    return playerEntry['playerId']
+                else:
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
+            elif injuryId != 'NULL':
+                if playerEntry['injuryId'] is None or math.isnan(playerEntry['injuryId']):
+                    c.execute("update refData.playerIds set injuryId = %d where playerId = %d" % (injuryId,playerEntry['playerId']))
+                    conn.commit()
+                    return playerEntry['playerId']
+                else:
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
+            else:
+                return playerEntry['playerId']
         else:
             try:
                 return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
