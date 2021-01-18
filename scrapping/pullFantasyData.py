@@ -27,9 +27,9 @@ day = calendar.day_name[now.weekday()]
 nowTime = now.time()
 if now.hour > 4 and now.hour < 12:
     time = 'Morning'
-elif now.hour < 15:
+elif now.hour < 15 and now.hour >= 12:
     time = 'Afternoon'
-elif now.hour < 22:
+elif now.hour < 22 and now.hour >= 15:
     time = 'Evening'
 else:
     time = 'Night'
