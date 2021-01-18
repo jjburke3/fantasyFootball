@@ -25,11 +25,11 @@ year = (now - timedelta(days=60)).year
 day = calendar.day_name[now.weekday()]
 
 nowTime = now.time()
-if now.hour > 3 and now.hour < 14:
+if now.hour > 4 and now.hour < 12:
     time = 'Morning'
-elif now.hour < 18:
+elif now.hour < 15:
     time = 'Afternoon'
-elif now.hour < 20:
+elif now.hour < 22:
     time = 'Evening'
 else:
     time = 'Night'
@@ -63,15 +63,20 @@ with DOConnect() as tunnel:
 finishedWeeks = nflSched.loc[nflSched.maxDate< now.date()].sort_values('maxDate',ascending=False)
 comingWeeks = nflSched.loc[nflSched.maxDate>= now.date()].sort_values('maxDate')
 
-
-currentWeek = comingWeeks.iloc[0].nflWeek
-currentYear = comingWeeks.iloc[0].nflSeason
-
-
-daysToWeekStart = (comingWeeks.iloc[0].minDate - now.date()).days
-daysToWeekFinish = (comingWeeks.iloc[0].maxDate - now.date()).days
+if comingWeeks.shape[0] == 0:
+    currentWeek = 0
+    currentYear = 0
+    daysToWeekStart = 99999
+    daysToWeekFinish = 99999
+else:
+    currentWeek = comingWeeks.iloc[0].nflWeek
+    currentYear = comingWeeks.iloc[0].nflSeason
+    daysToWeekStart = (comingWeeks.iloc[0].minDate - now.date()).days
+    daysToWeekFinish = (comingWeeks.iloc[0].maxDate - now.date()).days
 daysSinceWeekFinish = (now.date() - finishedWeeks.iloc[0].maxDate).days
 
+print(currentWeek, currentYear)
+print(daysToWeekStart,daysToWeekFinish,daysSinceWeekFinish)
 
 ## week end pull fantasy and stats data
 if daysSinceWeekFinish == 1 and time == 'Night':
@@ -91,8 +96,34 @@ if daysSinceWeekFinish == 1 and time == 'Night':
                     c.execute(statement)
                     conn.commit()
             except Exception as e:
-                print(str(e)
+                print(str(e))
+
+        conn.close()
 
 
 ## pull injury and depth chart data
-    
+if daysToWeekStart <= 50:
+    if daysToWeekStart > 10:
+        weekUsed = 0
+    else:
+        weekUsed = currentWeek
+    with DOConnect() as tunnel:
+        c, conn = connection(tunnel)
+        try:
+            sql = pullInjuries(conn,year,weekUsed,day,time)
+            for statement in sql:
+                c.execute(statement)
+            conn.commit()
+        except Exception as e:
+            print(str(e))
+        try:
+            c.execute('''select max(chartVersion) as version
+                     from scrapped_data.depthCharts''')
+            versionNo = (c.fetchone()[0]) + 1
+            sql = pullDepthCharts(conn,year,week,day,time,versionNo)
+            for statement in sql:
+                c.execute(statement)
+            conn.commit()
+        except Exception as e:
+            print(str(e))
+        conn.close()

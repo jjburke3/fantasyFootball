@@ -30,8 +30,14 @@ def returnWeekStats(conn,
     sql = InsertTable("scrapped_data2.playerStats")
     deleteSql = ''' delete from scrapped_data2.playerStats where
                     statYear = %s and statWeek = %s ''' % (str(year),str(week))
-    
-    season = str(year)+"-regular"
+    if week > 17:
+        pullWeek = week - 17
+        season = str(year+1)+"-playoff"
+        teamRangeEnd = 56
+    else:
+        pullWeek = week
+        season = str(year)+"-regular"
+        teamRangeEnd = 80
     params = {}
     
     headers = {'Authorization' : ('Basic ' +
@@ -39,14 +45,17 @@ def returnWeekStats(conn,
                 )}
     url = "https://api.mysportsfeeds.com/v2.1/pull/nfl/%s/week/%s/player_gamelogs.json"
     teamUrl = "https://api.mysportsfeeds.com/v2.1/pull/nfl/%s/week/%s/team_gamelogs.json"
-    for i in range(48,80,8):
+    for i in range(48,teamRangeEnd,8):
         print(year,week,i)
         params['team'] = str(i)
-        for j in range(1,8):
-            params['team'] += "," + str(i+j)
+        if week > 17:
+            params = {}
+        else:
+            for j in range(1,8):
+                params['team'] += "," + str(i+j)
         status = True
         while status:
-            r = requests.get(url % (season,str(week)),
+            r = requests.get(url % (season,str(pullWeek)),
                              params=params,
                              headers=headers)
             print('players',r)
@@ -60,7 +69,6 @@ def returnWeekStats(conn,
                 try:
                     sportsFeedsId = player['player']['id']
                     name = player['player']['firstName'] + " " + player['player']['lastName']
-                    name = name.replace("'","\\'")
                     team = player['team']['abbreviation']
                     pos = player['player']['position']
                     obj = player['stats']
@@ -223,13 +231,13 @@ def returnWeekStats(conn,
                             ])
                 except Exception as e:
                     print(str(e))
-            time.sleep(0)
+            time.sleep(10)
         except Exception as e:
             print(str(e))
         status = True
         while status:
             
-            r2 = requests.get(teamUrl % (season,str(week)),
+            r2 = requests.get(teamUrl % (season,str(pullWeek)),
                          params=params,
                          headers=headers)
             print('teams',r2)
@@ -337,7 +345,7 @@ def returnWeekStats(conn,
                     ])
 
 
-            time.sleep(0)
+            time.sleep(10)
         except Exception as e:
             print(str(e))
 

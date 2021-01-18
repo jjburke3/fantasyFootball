@@ -35,14 +35,14 @@ def pullLeagueData(year,week,conn):
     ## create insert objects for both individual player scores table
     ## and weekly wins table
     sql1 = InsertTable("la_liga_data.playerPoints")
-    sqlWins = InsertTable("la_ligaData.wins")
+    sqlWins = InsertTable("la_liga_data.wins")
 
-    sql1.updateStatement['playerVsTeam','playerId','playerESPNId',
-                         'playerFNLTeam','playerSlot','playerPosition',
-                         'playerPoints','dataCreateDate']
+    sql1.updateStatement(['playerVsTeam','playerId','playerESPNId',
+                         'playerNFLTeam','playerSlot','playerPosition',
+                         'playerPoints','dataCreateDate'])
 
-    sqlWins.updateStatement['winPoints','winPointsAgs','winWin',
-                            'winLoss','winTie','dataCreate']
+    sqlWins.updateStatement(['winPoints','winPointsAgs','winWin',
+                            'winLoss','winTie','dataCreate'])
 
     for team in range(1,15):
         matchup = league.boxscore(week=week,team=team)
@@ -88,7 +88,7 @@ def pullLeagueData(year,week,conn):
         for i, player in enumerate(matchup['playerList']):
             try:
                 teamNumber = teams.teamId(player['playerTeam'],conn)
-                playerNumber = players.playerId([player['playerName'].replace("'","\\'"),
+                playerNumber = players.playerId([player['playerName'],
                                                      str(teamNumber),
                                                      player['playerPos'],
                                                      str(season)],
@@ -96,7 +96,7 @@ def pullLeagueData(year,week,conn):
 
                 sql1.appendRow([[str(season),''], ##season value
                                 [str(week),''], ## week value
-                                [teamNumber,''], ## team value
+                                [teamName,'string'], ## team value
                                 [str(i),''], ## player slot number
                                 [opp,'string'],## vs team
                                 [playerNumber,''],## playerId
@@ -115,11 +115,5 @@ def pullLeagueData(year,week,conn):
                 
             
 
-            
-
-
-    sqlInsert = sqlInsert[:-1]
-    sqlInsert2 = sqlInsert2[:-1]
-    print(sql1.returnStatement())
     return [sql1.returnStatement(), sqlWins.returnStatement()]
 

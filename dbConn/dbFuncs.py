@@ -181,7 +181,7 @@ class getPlayerId:
                         and playerTeam = %s
                         and playerPosition in ('%s','%s')
                         and playerYear between %s - 2 and %s''' %
-                      (idCheck, playerName[0], str(playerName[1]),
+                      (idCheck, re.sub(r"(?<!\\)(')","\\'",playerName[0]), str(playerName[1]),
                        positionMatch,playerName[2], str(playerName[3]), str(playerName[3])))
             result = c.fetchone()
             if result != None:
@@ -234,7 +234,7 @@ class getPlayerId:
                         where a.playerName = '%s'
                         and playerTeam = %s
                         and playerYear = %s''' %
-                      (idCheck, playerName[0], 
+                      (idCheck, re.sub(r"(?<!\\)(')","\\'",playerName[0]), 
                        str(playerName[1]), str(playerName[3])))
             result = c.fetchone()
             if result != None:
@@ -276,20 +276,23 @@ class getPlayerId:
                 playerId = 0
             c.execute("insert into refData.playerIds values (%s, %s, %s, %s, %s, '%s')" %
                       (str(playerId), str(espnId), str(statsId), str(depthChartId),
-                       str(injuryId), playerName[0]))
+                       str(injuryId), re.sub(r"(?<!\\)(')","\\'",playerName[0])))
             c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
                        str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
             conn.commit()
         
             return playerId
         except Exception as e:
-            c.execute("insert into refData.playerName_errors values (null, %s, %s, current_timestamp())" % (str(e).replace("'","\\'"), '-'.join(playerName).replace("'","\\'")))
+            c.execute("insert into refData.playerName_errors values (null, %s, %s, current_timestamp())" %
+                      (re.sub(r"(?<!\\)(')","\\'",str(e)), re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName))))
             conn.commit()
-            return -999999
+            c.execute("select max(errorId) from refData.playerName_errors")
+            result = c.fetchone()
+            return result[0]-999999
 
     def _insertNameString(self, id, name, approx, year, team, position, totalString, multiSameName):
         return ("insert into refData.playerNames values(%s, '%s', '%s', %s, %s, '%s', '%s', %s)" %
-                (id, name, approx, year, team, position, totalString, multiSameName))
+                (id, re.sub(r"(?<!\\)(')","\\'",name), approx, year, team, position, re.sub(r"(?<!\\)(')","\\'",totalString), multiSameName))
 
     def playerId(self, playerName, conn, espnId = 'NULL', depthChartId = 'NULL',
                  injuryId = 'NULL', statsId = 'NULL'):
@@ -340,4 +343,9 @@ class getPlayerId:
                 return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
             except Exception as e:
                 traceback.print_exc() 
-                return 0
+                c.execute("insert into refData.playerName_errors values (null, %s, %s, current_timestamp())" %
+                          ('', re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName))))
+                conn.commit()
+                c.execute("select max(errorId) from refData.playerName_errors")
+                result = c.fetchone()
+                return result[0]-999999

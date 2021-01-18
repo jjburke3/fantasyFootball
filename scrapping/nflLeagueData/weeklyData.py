@@ -10,7 +10,7 @@ import calendar
 
 from DOConn import connection
 from DOsshTunnel import DOConnect
-#from updateQueries import updateFunc
+from updateQueries import updateFunc
 from mysportsfeeds import returnWeekStats
 
 now = datetime.utcnow() - timedelta(hours=4)
@@ -62,32 +62,33 @@ else:
 day = calendar.day_name[now.weekday()]
 
 week = 13
+for week in range(18,19):
+    print('week',week)
+    with DOConnect() as tunnel:
+        c, conn = connection(tunnel)
+        try:
+            sql = returnWeekStats(conn,week,year)
+            for statement in sql:
+                try:
+                    c.execute(statement)
+                    conn.commit()
+                except Exception as e:
+                    print(str(e))
+        except Exception as e:
+            print(str(e))
+        try:
+            sql = updateFunc()
+            for sqlCode in sql:
+                try:
+                    temp = 1
+                    c.execute(sqlCode)
+                    conn.commit()
+                except Exception as e:
+                    print(str(e))
+        except Exception as e:
+            print(str(e))
 
-with DOConnect() as tunnel:
-    c, conn = connection(tunnel)
-    try:
-        sql = returnWeekStats(conn,week,year)
-        for statement in sql:
-            try:
-                c.execute(statement)
-                conn.commit()
-            except Exception as e:
-                print(str(e))
-    except Exception as e:
-        print(str(e))
-##    try:
-##        sql = updateFunc()
-##        for sqlCode in sql:
-##            try:
-##                temp = 1
-##                c.execute(sqlCode)
-##                conn.commit()
-##            except Exception as e:
-##                print(str(e))
-##    except Exception as e:
-##        print(str(e))
 
 
 
-
-    conn.close()
+        conn.close()
