@@ -36,7 +36,7 @@ elif now.hour < 22 and now.hour >= 15:
 else:
     time = 'Night'
 if ((now.month in (8,9,10,11,12,1) and time == 'Morning') or
-        (now.day == 1 and time == 'Morning')):
+        (now.day == 1 and time == 'Morning')) or daysSinceWeekFinish == 1:
 ## pull the nfl schedule on every day in season, and the 1st of month out of season
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
@@ -76,6 +76,8 @@ else:
     daysToWeekStart = (comingWeeks.iloc[0].minDate - now.date()).days
     daysToWeekFinish = (comingWeeks.iloc[0].maxDate - now.date()).days
 daysSinceWeekFinish = (now.date() - finishedWeeks.iloc[0].maxDate).days
+finishedWeek = finishedWeeks.iloc[0].nflWeek
+finishedSeason = finishedWeeks.iloc[0].nflSeason
 
 print(currentWeek, currentYear, time, day)
 print(daysToWeekStart,daysToWeekFinish,daysSinceWeekFinish)
@@ -85,7 +87,7 @@ if daysSinceWeekFinish == 1 and time == 'Night':
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
         try:
-            sql = returnWeekStats(conn,currentWeek-1,currentYear)
+            sql = returnWeekStats(conn,finishedWeek,finishedSeason)
             for statement in sql:
                 c.execute(statement)
                 conn.commit()
@@ -93,7 +95,7 @@ if daysSinceWeekFinish == 1 and time == 'Night':
             print(str(e))
         if currentWeek <= 17:
             try:
-                sql = pullLeagueData(currentYear,currentWeek-1,conn)
+                sql = pullLeagueData(finishedSeason,finishedWeek,conn)
                 for statement in sql:
                     c.execute(statement)
                     conn.commit()
