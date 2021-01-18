@@ -36,7 +36,7 @@ elif now.hour < 22 and now.hour >= 15:
 else:
     time = 'Night'
 if ((now.month in (8,9,10,11,12,1) and time == 'Morning') or
-        (now.day == 1 and time == 'Morning')) or daysSinceWeekFinish == 1:
+        (now.day == 1 and time == 'Morning'))s:
 ## pull the nfl schedule on every day in season, and the 1st of month out of season
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
