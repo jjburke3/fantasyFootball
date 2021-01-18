@@ -15,7 +15,9 @@ from DOConn import connection
 from DOsshTunnel import DOConnect
 from depthCharts import pullDepthCharts
 from injuries import pullInjuries
+from mysportsfeeds import returnWeekStats
 from pullNflSchedule import pullLeagueSchedule
+from leagueResults import pullLeagueData
 
 now = datetime.utcnow() - timedelta(hours=4)
 
@@ -33,9 +35,9 @@ elif now.hour < 22 and now.hour >= 15:
     time = 'Evening'
 else:
     time = 'Night'
-if ((now.month in (8,9,10,11,12,1) and day == 'Wednesday' and time == 'Morning') or
+if ((now.month in (8,9,10,11,12,1) and time == 'Morning') or
         (now.day == 1 and time == 'Morning')):
-## pull the nfl schedule on wednesdays in season, and the 1st of month out of season
+## pull the nfl schedule on every day in season, and the 1st of month out of season
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
         try:
@@ -91,8 +93,8 @@ if daysSinceWeekFinish == 1 and time == 'Night':
             print(str(e))
         if currentWeek <= 17:
             try:
-                sql = temp
-                for statement in pullLeagueData(currentYear,currentWeek-1,conn):
+                sql = pullLeagueData(currentYear,currentWeek-1,conn)
+                for statement in sql:
                     c.execute(statement)
                     conn.commit()
             except Exception as e:
