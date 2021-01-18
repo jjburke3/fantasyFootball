@@ -75,7 +75,7 @@ else:
     daysToWeekFinish = (comingWeeks.iloc[0].maxDate - now.date()).days
 daysSinceWeekFinish = (now.date() - finishedWeeks.iloc[0].maxDate).days
 
-print(currentWeek, currentYear)
+print(currentWeek, currentYear, time, day)
 print(daysToWeekStart,daysToWeekFinish,daysSinceWeekFinish)
 
 ## week end pull fantasy and stats data
