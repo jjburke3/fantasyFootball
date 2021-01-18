@@ -31,11 +31,9 @@ def returnWeekStats(conn,
     deleteSql = ''' delete from scrapped_data2.playerStats where
                     statYear = %s and statWeek = %s ''' % (str(year),str(week))
     if week > 17:
-        pullWeek = week - 17
         season = str(year+1)+"-playoff"
         teamRangeEnd = 56
     else:
-        pullWeek = week
         season = str(year)+"-regular"
         teamRangeEnd = 80
     params = {}
@@ -46,7 +44,6 @@ def returnWeekStats(conn,
     url = "https://api.mysportsfeeds.com/v2.1/pull/nfl/%s/week/%s/player_gamelogs.json"
     teamUrl = "https://api.mysportsfeeds.com/v2.1/pull/nfl/%s/week/%s/team_gamelogs.json"
     for i in range(48,teamRangeEnd,8):
-        print(year,week,i)
         params['team'] = str(i)
         if week > 17:
             params = {}
@@ -55,10 +52,9 @@ def returnWeekStats(conn,
                 params['team'] += "," + str(i+j)
         status = True
         while status:
-            r = requests.get(url % (season,str(pullWeek)),
+            r = requests.get(url % (season,str(week)),
                              params=params,
                              headers=headers)
-            print('players',r)
             if r.status_code != 200:
                 time.sleep(10)
             else:
@@ -237,10 +233,9 @@ def returnWeekStats(conn,
         status = True
         while status:
             
-            r2 = requests.get(teamUrl % (season,str(pullWeek)),
+            r2 = requests.get(teamUrl % (season,str(week)),
                          params=params,
                          headers=headers)
-            print('teams',r2)
             if r2.status_code != 200:
                 time.sleep(10)
             else:

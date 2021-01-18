@@ -79,11 +79,9 @@ daysSinceWeekFinish = (now.date() - finishedWeeks.iloc[0].maxDate).days
 finishedWeek = finishedWeeks.iloc[0].nflWeek
 finishedSeason = finishedWeeks.iloc[0].nflSeason
 
-print(currentWeek, currentYear, time, day)
-print(daysToWeekStart,daysToWeekFinish,daysSinceWeekFinish)
 
 ## week end pull fantasy and stats data
-if daysSinceWeekFinish == 1 and time == 'Night':
+if (daysSinceWeekFinish == 1 and time == 'Night'):
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
         try:
@@ -92,7 +90,7 @@ if daysSinceWeekFinish == 1 and time == 'Night':
                 c.execute(statement)
                 conn.commit()
         except Exception as e:
-            print(str(e))
+            traceback.print_exc()
         if currentWeek <= 17:
             try:
                 sql = pullLeagueData(finishedSeason,finishedWeek,conn)
