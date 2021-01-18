@@ -102,7 +102,7 @@ if daysSinceWeekFinish == 1 and time == 'Night':
 
 
 ## pull injury and depth chart data
-if daysToWeekStart <= 50:
+if daysToWeekStart <= 50 and time != 'Night':
     if daysToWeekStart > 10:
         weekUsed = 0
     else:
