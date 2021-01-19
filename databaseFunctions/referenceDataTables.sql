@@ -48,5 +48,9 @@ create table refData.playerName_errors
 	errorId int primary key auto_increment,
 	error_desc text,
 	error_player text,
+	espnId int,
+	statsId int,
+	dcId varchar(15),
+	injuryId int,
 	error_datetime datetime
 );
