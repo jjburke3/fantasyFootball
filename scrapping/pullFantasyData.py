@@ -29,9 +29,9 @@ day = calendar.day_name[now.weekday()]
 nowTime = now.time()
 if now.hour > 4 and now.hour < 12:
     time = 'Morning'
-elif now.hour < 15 and now.hour >= 12:
+elif now.hour < 17 and now.hour >= 12:
     time = 'Afternoon'
-elif now.hour < 22 and now.hour >= 15:
+elif now.hour < 22 and now.hour >= 17:
     time = 'Evening'
 else:
     time = 'Night'
@@ -67,7 +67,7 @@ comingWeeks = nflSched.loc[nflSched.maxDate>= now.date()].sort_values('maxDate')
 
 if comingWeeks.shape[0] == 0:
     currentWeek = 0
-    currentYear = 0
+    currentYear = year
     daysToWeekStart = 99999
     daysToWeekFinish = 99999
 else:
@@ -98,14 +98,14 @@ if (daysSinceWeekFinish == 1 and time == 'Night'):
                     c.execute(statement)
                     conn.commit()
             except Exception as e:
-                print(str(e))
+                traceback.print_exc() 
 
         conn.close()
 
 
 ## pull injury and depth chart data
 if daysToWeekStart <= 50 and time != 'Night':
-    if daysToWeekStart > 10:
+    if daysToWeekStart > 10 and currentWeek != 21:
         weekUsed = 0
     else:
         weekUsed = currentWeek
@@ -117,15 +117,15 @@ if daysToWeekStart <= 50 and time != 'Night':
                 c.execute(statement)
             conn.commit()
         except Exception as e:
-            print(str(e))
+            traceback.print_exc() 
         try:
             c.execute('''select max(chartVersion) as version
                      from scrapped_data.depthCharts''')
             versionNo = (c.fetchone()[0]) + 1
-            sql = pullDepthCharts(conn,year,week,day,time,versionNo)
+            sql = pullDepthCharts(conn,year,weekUsed,day,time,versionNo)
             for statement in sql:
                 c.execute(statement)
             conn.commit()
         except Exception as e:
-            print(str(e))
+            traceback.print_exc() 
         conn.close()

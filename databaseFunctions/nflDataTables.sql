@@ -136,7 +136,8 @@ create table scrapped_data2.depthCharts
 	dataDateTime timestamp DEFAULT current_timestamp(),
 	
 	index(chartVersion),
-	index(chartSeason,chartWeek)
+	index(chartSeason,chartWeek),
+	index(chartPlayer)
 );
 
 -- table for madden data

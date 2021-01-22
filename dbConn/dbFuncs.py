@@ -109,17 +109,29 @@ class getPlayerId:
         self.injuryDict = {}
         self.statsDict = {}
         if espn:
-            self.espnDict = pd.read_sql("select espnId, playerId from refData.playerIds where espnId is not null",
+            self.espnDict = pd.read_sql('''select espnId, substring_index(group_concat(playerId),',',1) as playerId
+                                            from refData.playerIds
+                                            where espnId is not null
+                                            group by 1 having count(*) = 1''',
                                        con=conn,index_col='espnId').to_dict('index')
 
         if depthChart:
-            self.depthDict = pd.read_sql("select depthChartsId, playerId from refData.playerIds where depthChartsId is not null",
+            self.depthDict = pd.read_sql('''select depthChartsId, substring_index(group_concat(playerId),',',1) as playerId
+                                            from refData.playerIds
+                                         where depthChartsId is not null
+                                        group by 1 having count(*) = 1''',
                                        con=conn,index_col='depthChartsId').to_dict('index')
         if injury:
-            self.injuryDict = pd.read_sql("select injuryId, playerId from refData.playerIds where injuryId is not null",
+            self.injuryDict = pd.read_sql('''select injuryId, substring_index(group_concat(playerId),',',1) as playerId
+                                            from refData.playerIds
+                                          where injuryId is not null
+                                            group by 1 having count(*) = 1''',
                                        con=conn,index_col='injuryId').to_dict('index')
         if stats:
-            self.statsDict = pd.read_sql("select statsId, playerId from refData.playerIds where statsId is not null",
+            self.statsDict = pd.read_sql('''select statsId, substring_index(group_concat(playerId),',',1) as playerId
+                                            from refData.playerIds
+                                         where statsId is not null
+                                            group by 1 having count(*) = 1''',
                                        con=conn,index_col='statsId').to_dict('index')
 
     def _addPlayer(self, playerName,conn,espnId = 'NULL', depthChartId = 'NULL',
@@ -274,8 +286,12 @@ class getPlayerId:
                 playerId = result[0] + 1
             else:
                 playerId = 0
+            if depthChartId != 'NULL':
+                dcId = "'" + depthChartId + "'"
+            else:
+                dcId = depthChartId
             c.execute("insert into refData.playerIds values (%s, %s, %s, %s, %s, '%s')" %
-                      (str(playerId), str(espnId), str(statsId), str(depthChartId),
+                      (str(playerId), str(espnId), str(statsId), str(dcId),
                        str(injuryId), re.sub(r"(?<!\\)(')","\\'",playerName[0])))
             c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
                        str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
@@ -283,8 +299,11 @@ class getPlayerId:
         
             return playerId
         except Exception as e:
-            c.execute("insert into refData.playerName_errors values (null, %s, %s, current_timestamp())" %
-                      (re.sub(r"(?<!\\)(')","\\'",str(e)), re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName))))
+            traceback.print_exc()
+            print(re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName)))
+            c.execute("insert into refData.playerName_errors values (null, '%s', '%s', %s, %s, '%s',%s, current_timestamp())" %
+                      (re.sub(r"(?<!\\)(')","\\'",str(e)), re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName)),
+                           str(espnId), str(statsId), str(depthChartId), str(injuryId)))
             conn.commit()
             c.execute("select max(errorId) from refData.playerName_errors")
             result = c.fetchone()
@@ -324,7 +343,7 @@ class getPlayerId:
                     return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
             elif depthChartId != 'NULL':
                 if playerEntry['depthChartsId'] is None or math.isnan(playerEntry['depthChartsId']):
-                    c.execute("update refData.playerIds set depthChartsId = %d where playerId = %d" % (depthChartId,playerEntry['playerId']))
+                    c.execute("update refData.playerIds set depthChartsId = '%s' where playerId = %d" % (depthChartId,playerEntry['playerId']))
                     conn.commit()
                     return playerEntry['playerId']
                 else:
@@ -342,9 +361,11 @@ class getPlayerId:
             try:
                 return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
             except Exception as e:
+                c = conn.cursor()
                 traceback.print_exc() 
-                c.execute("insert into refData.playerName_errors values (null, %s, %s, current_timestamp())" %
-                          ('', re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName))))
+                c.execute("insert into refData.playerName_errors values (null, '%s', '%s', %s, %s, '%s', %s, current_timestamp())" %
+                          (re.sub(r"(?<!\\)(')","\\'",str(e)), re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName)),
+                           str(espnId), str(statsId), str(depthChartId), str(injuryId)))
                 conn.commit()
                 c.execute("select max(errorId) from refData.playerName_errors")
                 result = c.fetchone()
