@@ -10,8 +10,8 @@ sys.path.insert(0,'../dbConn')
 from DOConn import connection
 from DOsshTunnel import DOConnect
 
-for season in range(2017,2018):
-    for week in range(3,17):
+for season in range(2017,2021):
+    for week in range(0,17):
 
         ##pull all necessary data
         with DOConnect() as tunnel:
