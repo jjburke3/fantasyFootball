@@ -198,10 +198,10 @@ join leagueSims.weeklyModelPredictedWeekOppTeamData d on a.predictionSeason = d.
 left join leagueSims.chartVerionPlayers t1 on a.predictionSeason = t1.cvSeason and b.chartVersion = t1.cvVersion and b.playerTeam = t1.cvTeam
 left join leagueSims.chartVerionPlayers t2 on a.predictionSeason = t2.cvSeason and b.chartVersion = t2.cvVersion and d.oppTeam = t2.cvTeam
 where a.predictionSeason between %d and %d
-	and (a.predictionSeason < %d or b.predictionWeek <= %d)
+	and (b.predictionWeek = %d)
 	and b.playerPosition= '%s' '''
 
-    return pd.read_sql(sql % (season-3,season,season,week,position),con=conn)
+    return pd.read_sql(sql % (season-3,season,week,position),con=conn)
 
     
 

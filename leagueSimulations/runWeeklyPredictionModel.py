@@ -10,8 +10,8 @@ sys.path.insert(0,'../dbConn')
 from DOConn import connection
 from DOsshTunnel import DOConnect
 
-for season in range(2015,2021):
-    for week in range(0,17):
+for season in range(2017,2018):
+    for week in range(3,17):
 
         ##pull all necessary data
         with DOConnect() as tunnel:
@@ -21,22 +21,23 @@ for season in range(2015,2021):
             conn.close()
 
             for pos in ['RB','QB','TE','WR','D/ST','K']:
-                print(pos)
+                print(str(season)+"-"+str(week)+"-"+pos)
                 c, conn = connection(tunnel)
                 modelData = meth.pullModelData(season,week,pos, conn)
                 conn.close()
 
-                trainIndex = ((modelData.predictionSeason < season) & (modelData.predictionWeek == week)# | (
-                        #(modelData.predictionSeason == season) &
-                        #(modelData.predictionWeek < week) &
-                        #(modelData.predictedWeek < week)
-                    )#)
+                trainIndex = ((modelData.predictionSeason < season) & (modelData.predictionWeek == week))
 
                 predictIndex = ((modelData.predictionSeason == season) &
                                 (modelData.predictionWeek == week))
 
+                if pos in ['RB','WR'] and week in [0,1,2,3]:
+                    treeCount = 150
+                else:
+                    treeCount = 200
+
                 try:
-                    leagueModel = leaguePredictionTree(modelData[trainIndex])
+                    leagueModel = leaguePredictionTree(modelData[trainIndex],treeCount)
                     predResults = leagueModel.returnSimsModels(modelData[predictIndex])
                 except:
                     traceback.print_exc() 

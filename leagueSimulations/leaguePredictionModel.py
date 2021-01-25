@@ -15,7 +15,7 @@ import sys
 
 class leaguePredictionTree():
 
-    def __init__(self, predictionData):
+    def __init__(self, predictionData,treeCount):
         self.catVariables = ['playerPosition',
                              'playerStatus',
                              'chartPosition',
@@ -139,7 +139,6 @@ class leaguePredictionTree():
         self.playedIndex = predictionData.gamePlayed==1
         self.encoder = pp.OneHotEncoder(handle_unknown='ignore',sparse=False)
         self._encodeXSet(self.data,fit=True)
-        treeCount = 200
         self.pointsModel = RandomForestRegressor(n_estimators=treeCount,max_features="sqrt")
         self.varModel = RandomForestRegressor(n_estimators=treeCount,max_features="sqrt")
         self.skewModel = RandomForestRegressor(n_estimators=treeCount,max_features="sqrt")
