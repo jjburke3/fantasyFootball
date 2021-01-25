@@ -13,9 +13,18 @@ def pullResults(season, week, conn):
         where winSeason = %d and winWeek < %d
         union
         select matchYear, matchWeek, matchTeam, matchOpp, null, null, null, null, null
-         from la_liga_data.matchups where matchYear = %d and matchWeek >= %d; '''
-    
-    return pd.read_sql(sql % (season,week,season,week),con=conn)
+         from la_liga_data.matchups where matchYear = %d and matchWeek >= %d
+         union select %d, weekNum, winTeam,
+         null,null,null,null,null,null
+         from (select distinct winTeam from la_liga_data.wins where winSeason = %d) a
+         join refData.seasonWeeks b on weekNum between 1 and 16
+         where weekNum not in
+             (select distinct winWeek from la_liga_data.wins where winSeason = %d and winWeek < %d)
+             and weekNum not in
+             (select distinct matchWeek from la_liga_data.matchups where matchYear = %d)
+         '''
+
+    return pd.read_sql(sql % (season,week,season,week,season, season,season,week,season),con=conn)
 
 def pullSchedule(season, conn):
     sql = ''' '''

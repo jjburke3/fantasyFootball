@@ -201,6 +201,10 @@ left join leagueSims.chartVersion a on predictionSeason = chartSeason and
 on duplicate key update chartVersion = values(chartVersion);
 
 update leagueSims.weeklyModelPredictedWeekOppTeamData a
+JOin (select distinct playerId, playerTeam from refData.playerNames where playerPosition = 'D/ST') b on a.playerId = b.playerId
+set a.playerTeam = b.playerTeam;
+
+update leagueSims.weeklyModelPredictedWeekOppTeamData a
 join (
 select chartVersion, chartPlayer,
 substring_index(group_concat(distinct chartTeam),',',1) as chartTeam
@@ -219,7 +223,14 @@ set oppTeam = case when nflHomeTeam = playerTeam then nflRoadTeam else nflHomeTe
 update leagueSims.weeklyModelPredictedWeekOppTeamData
 set byeWeek = case when oppTeam is null then 1 else 0 end;
 
+update 
+leagueSims.weeklyModelPredictedWeekData a
+join leagueSims.weeklyModelPredictedWeekOppTeamData b
+on a.predictionSeason = b.predictionSeason and a.playerId = b.playerId
+	and a.predictedWeek = b.predictedWeek and b.predictionWeek = b.predictedWeek
 
+set a.gamePlayed = 0
+where a.playerId between -150 and -1 and b.byeWeek = 1;
 
  
  -- get player stats
