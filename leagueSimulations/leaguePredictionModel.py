@@ -147,11 +147,15 @@ class leaguePredictionTree():
         self.playedModel = RandomForestClassifier(n_estimators=treeCount,max_features="sqrt")
         
         self._buildPlayedModel()
-
+        print('played model built')
         self._buildPointsModel()
+        print('points model built')
         self._buildVarModel()
+        print('var model built')
         self._buildSkewModel()
+        print('skew model built')
         self._buildKurtosisModel()
+        print('kurtosis model built')
 
         
         
