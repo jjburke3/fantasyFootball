@@ -84,12 +84,22 @@ while True:
     start = time.clock()
     sim = leagueSimulation(rostersDict,replaceValues,results)
     status = True
-    while status:
+    fails = 0
+    while status and fails < 100:
         try:
             sim.simSeason()
             status = False
-        except:
-            traceback.print_exc()
+        except Exception as e:
+            fails += 1
+            with DOConnect() as tunnel:
+                c, conn = connection(tunnel)
+                c.execute('''insert intoleagueSims.simErrors
+                              values (%d, %d, '%s', current_timestamp());''' % (
+                                  season, week, str(e)))
+                conn.commit()
+                conn.close()
+    if fails >= 100:
+        continue
 
     results = sim.leagueResults()
     resultsTable = results.copy()
@@ -104,12 +114,21 @@ while True:
     for i in range(1,runCount):
         start = time.clock()
         status = True
-        while status:
+        while status and fails < 100:
             try:
                 sim.simSeason()
                 status = False
-            except:
-                traceback.print_exc() 
+            except Exception as e:
+                fails += 1
+                with DOConnect() as tunnel:
+                    c, conn = connection(tunnel)
+                    c.execute('''insert intoleagueSims.simErrors
+                                  values (%d, %d, '%s', current_timestamp());''' % (
+                                      season, week, str(e)))
+                    conn.commit()
+                    conn.close()
+        if fails >= 100:
+            continue
             
         results = sim.leagueResults()
         resultsTable = resultsTable.add(results,fill_value=0)
@@ -118,6 +137,8 @@ while True:
         table2['Losses'] = table2.apply(lambda x: x['Losses'] + [results.loc[results.index==x['Names']].iloc[0]['winLoss']],axis=1)
         table2['HighPoints'] = table2.apply(lambda x: x['HighPoints'] + [results.loc[results.index==x['Names']].iloc[0]['weeklyHighPoints']],axis=1)
         print(time.clock()-start)
+    if fails >= 100:
+        continue
 
     sqlStatement = '''insert into leagueSims.standings values %s
                     on duplicate key update
