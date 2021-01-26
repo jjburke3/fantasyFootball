@@ -148,13 +148,13 @@ class leaguePredictionTree():
         self._buildPlayedModel()
         print('played model built')
         self._buildPointsModel()
-        print('points model built')
-        self._buildVarModel()
-        print('var model built')
-        self._buildSkewModel()
-        print('skew model built')
-        self._buildKurtosisModel()
-        print('kurtosis model built')
+##        print('points model built')
+##        self._buildVarModel()
+##        print('var model built')
+##        self._buildSkewModel()
+##        print('skew model built')
+##        self._buildKurtosisModel()
+##        print('kurtosis model built')
 
         
         
@@ -199,20 +199,22 @@ class leaguePredictionTree():
 
 
     def returnSimsModels(self, predictedData):
-        pointsModel = self.pointsModel.predict(self._encodeXSet(predictedData))
-        varianceModel = self.varModel.predict(self._encodeXSet(predictedData))
-        skewModel = self.skewModel.predict(self._encodeXSet(predictedData))
-        kurtosisModel = self.kurtosisModel.predict(self._encodeXSet(predictedData))
+        pointsModelPred = self.pointsModel.predict(self._encodeXSet(predictedData))
+        #varianceModel = self.varModel.predict(self._encodeXSet(predictedData))
+        #skewModel = self.skewModel.predict(self._encodeXSet(predictedData))
+        #kurtosisModel = self.kurtosisModel.predict(self._encodeXSet(predictedData))
+        predRange = self._pred_ints(self.pointsModel,self._encodeXSet(predictedData))
         playedModel = self.playedModel.predict_proba(self._encodeXSet(predictedData))
         seasonEndedModel = None
         playersData = pd.DataFrame({'playerId' : predictedData['playerId'],
                                     'modelSeason' : predictedData['predictionSeason'],
                                     'predictionWeek' : predictedData['predictionWeek'],
                                     'predictedWeek' : predictedData['predictedWeek'],
-                                    'modelPrediction' : pointsModel,
-                                    'modelVariance' : varianceModel,
-                                    'modelSkew' : skewModel,
-                                    'modelKurtosis' : kurtosisModel,
+                                    'modelPrediction' : pointsModelPred,
+                                    'predRange' : predRange,
+                                    #'modelVariance' : varianceModel,
+                                    #'modelSkew' : skewModel,
+                                    #'modelKurtosis' : kurtosisModel,
                                     'modelPlayProb' : playedModel[:,self.playedModel.classes_.tolist().index(1)]})
 
         return playersData
@@ -253,6 +255,18 @@ class leaguePredictionTree():
             ]
         numVars1 = predictedData[playerdNumReplaceZeroVariables].fillna(0)
         numVars2 = predictedData[playedNumReplaceOtherVariables].fillna(-9999)
+
+    def _pred_ints(self,model, X):
+        columnRanges = []
+        for x in range(len(X)):
+            entryRange = []
+            preds = []
+            for pred in model.estimators_:
+                preds.append(pred.predict(X[x].reshape(1, -1))[0])
+            for i in range(2,100,2):
+                entryRange.append(np.percentile(preds,i))
+            columnRanges.append(','.join([str(round(n,2)) for n in entryRange]))
+        return columnRanges
         
             
             

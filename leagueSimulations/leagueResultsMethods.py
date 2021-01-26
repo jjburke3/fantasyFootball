@@ -7,24 +7,32 @@ import statistics as s
 
 
 def pullResults(season, week, conn):
-    sql = '''select winSeason, winWeek, winTeam, winOpp,
-        winPoints, winPointsAgs, winWin, winLoss, winTie
+    sql = '''select winSeason, winWeek, winTeam, 
+		case when winWeek <= 13 or winWeek < %d then winOpp end as winOpp,
+        case when winWeek < %d then winPoints end as winPoints, 
+        case when winWeek < %d then winPointsAgs end winPointsAgs, 
+        case when winWeek < %d then winWin end winWin, 
+        case when winWeek < %d then winLoss end winLoss, 
+        case when winWeek < %d then winTie end winTie
 		from la_liga_data.wins
-        where winSeason = %d and winWeek < %d
+        where winSeason = %d
         union
         select matchYear, matchWeek, matchTeam, matchOpp, null, null, null, null, null
-         from la_liga_data.matchups where matchYear = %d and matchWeek >= %d
+         from la_liga_data.matchups where matchYear = %d and matchWeek not in 
+			(select distinct winWeek from la_liga_data.wins where winSeason = %d)
          union select %d, weekNum, winTeam,
          null,null,null,null,null,null
          from (select distinct winTeam from la_liga_data.wins where winSeason = %d) a
          join refData.seasonWeeks b on weekNum between 1 and 16
          where weekNum not in
-             (select distinct winWeek from la_liga_data.wins where winSeason = %d and winWeek < %d)
+             (select distinct winWeek from la_liga_data.wins where winSeason = %d)
              and weekNum not in
              (select distinct matchWeek from la_liga_data.matchups where matchYear = %d)
          '''
 
-    return pd.read_sql(sql % (season,week,season,week,season, season,season,week,season),con=conn)
+    return pd.read_sql(sql % (week,week,week,week,week,week,season,
+                              season,season,
+                              season,season,season,season),con=conn)
 
 def pullSchedule(season, conn):
     sql = ''' '''
@@ -207,55 +215,68 @@ where a.predictionSeason between %d and %d
 
 
 def pullCurrentRosters(season, week, conn):
-    sql = ''' select playerTeam, a.playerId, a.playerPosition, 
-                predictedWeek, 
-                ifnull(modelPrediction,0) as predictionValue,
-                ifnull(greatest(modelVariance,0),0) as predictionVar,
-                ifnull(modelSkew,0) as predictionSkew,
-            ifnull(modelPlayProb,0) as playProb
-            from la_liga_data.playerPoints a
-            left join leagueSims.modelPredictions b on playerWeek = predictionWeek - 1 and modelSeason = playerSeason
-				and a.playerId = b.playerId
-            where playerSeason = %d and playerWeek = %d - 1'''
+    if week > 1:
+        sql = ''' select playerTeam, a.playerId, a.playerPosition, 
+                    predictedWeek, 
+                    ifnull(modelPrediction,0) as predictionValue,
+                    ifnull(modelPossibleValues,0) as predictionDistr,
+                ifnull(modelPlayProb,0) as playProb
+                from la_liga_data.playerPoints a
+                left join leagueSims.modelPredictions b on playerWeek = predictionWeek - 1 and modelSeason = playerSeason
+                                    and a.playerId = b.playerId
+                where playerSeason = %d and playerWeek = %d - 1'''
 
-    return pd.read_sql(sql %(season,week),con=conn)
+        return pd.read_sql(sql %(season,week),con=conn)
+    else:
+        sql = ''' select selectingTeam as playerTeam, player as playerId, a.playerPosition, 
+                    predictedWeek, 
+                    ifnull(modelPrediction,0) as predictionValue,
+                    ifnull(modelPossibleValues,0) as predictionDistr,
+                    ifnull(modelPlayProb,0) as playProb
+                from la_liga_data.draftedPlayerData a
+                left join leagueSims.modelPredictions b on predictionWeek = %d and draftYear = modelSeason
+                        and a.player = b.playerId
+                where draftYear = %d;'''
+
+        return pd.read_sql(sql %(week,season),con=conn)
+        
 
 def pullReplacementNumbers(season,week,conn):
     sql = '''select predictedWeek, playerPosition,
             substring_index(group_concat(case when modelPlayProb > .5 then modelPrediction end  order by modelPrediction desc),',',
 				case when playerPosition in ('QB','D/ST','K') then 3 when playerPosition = 'TE' then 4 else 8 end) as replaceMean,
-            substring_index(group_concat(case when modelPlayProb > .5 then greatest(modelVariance,0) end  order by modelPrediction desc),',',
-				case when playerPosition in ('QB','D/ST','K') then 3 when playerPosition = 'TE' then 4 else 8 end) as replaceVar,
-            substring_index(group_concat(case when modelPlayProb > .5 then greatest(modelSkew,0) end  order by modelPrediction desc),',',
-				case when playerPosition in ('QB','D/ST','K') then 3 when playerPosition = 'TE' then 4 else 8 end) as replaceSkew
+            replace(substring_index(group_concat(case when modelPlayProb > .5 then modelPossibleValues end  order by modelPrediction desc separator '|'),'|',
+				case when playerPosition in ('QB','D/ST','K') then 3 when playerPosition = 'TE' then 4 else 8 end),'|',',') as replaceDistr
             from leagueSims.modelPredictions 
             where modelSeason = %d and predictionWeek = %d
-                    and playerId not in (select distinct playerId from la_liga_data.playerPoints where modelSeason = playerSeason and predictionWeek = playerWeek + 1)
+                    and playerId not in %s
             group by 1,2
 union all
 select predictedWeek, 'RBWR',
             substring_index(group_concat(case when modelPlayProb > .5 then modelPrediction end  order by modelPrediction desc),',',10) as replaceMean,
-            substring_index(group_concat(case when modelPlayProb > .5 then greatest(modelVariance,0) end  order by modelPrediction desc),',',10) as replaceVar,
-            substring_index(group_concat(case when modelPlayProb > .5 then greatest(modelSkew,0) end  order by modelPrediction desc),',',10) as replaceSkew
+            replace(substring_index(group_concat(case when modelPlayProb > .5 then modelPossibleValues end  order by modelPrediction desc separator '|'),'|',
+				10),'|',',') as replaceDistr
             from leagueSims.modelPredictions 
             where modelSeason = %d and predictionWeek = %d
-                    and playerId not in (select distinct playerId from la_liga_data.playerPoints where modelSeason = playerSeason and predictionWeek = playerWeek + 1)
+                    and playerId not in %s
 					and playerPosition in ('RB','WR')
             group by 1,2
 union all
 select predictedWeek, 'Flex',
             substring_index(group_concat(case when modelPlayProb > .5 then modelPrediction end  order by modelPrediction desc),',',10) as replaceMean,
-            substring_index(group_concat(case when modelPlayProb > .5 then greatest(modelVariance,0) end  order by modelPrediction desc),',',10) as replaceVar,
-            substring_index(group_concat(case when modelPlayProb > .5 then greatest(modelSkew,0) end  order by modelPrediction desc),',',10) as replaceSkew
+            replace(substring_index(group_concat(case when modelPlayProb > .5 then modelPossibleValues end  order by modelPrediction desc separator '|'),'|',
+				10),'|',',') as replaceDistr
             from leagueSims.modelPredictions 
             where modelSeason = %d and predictionWeek = %d
-                    and playerId not in (select distinct playerId from la_liga_data.playerPoints where modelSeason = playerSeason and predictionWeek = playerWeek + 1)
+                    and playerId not in %s
 					and playerPosition in ('RB','WR','TE')
             group by 1,2
 
             '''
-    table = pd.read_sql(sql %(season,week,season,week,season,week),con=conn)
+    if week > 1:
+        notInString = '(select distinct playerId from la_liga_data.playerPoints where modelSeason = playerSeason and predictionWeek = playerWeek + 1)'
+    else:
+        notInString = '(select distinct player from la_liga_data.draftedPlayerData where modelSeason = draftYear)'
+    table = pd.read_sql(sql %(season,week,notInString,season,week,notInString,season,week,notInString),con=conn)
     table['replaceMean'] = table.apply(lambda x: s.mean(map(float,x.replaceMean.split(','))),axis=1)
-    table['replaceVar'] = table.apply(lambda x: s.mean(map(float,x.replaceVar.split(','))),axis=1)
-    table['replaceSkew'] = table.apply(lambda x: s.mean(map(float,x.replaceSkew.split(','))),axis=1)
     return table

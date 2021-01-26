@@ -24,17 +24,25 @@ class leagueSimulation(object):
                      {'key' : 'FLEX', 'allow' : ['RB','WR','TE'], 'replace' : 'Flex'}
                      ]
 
+    def _isNoneNa(self,x):
+        if x is None:
+            return True
+        elif np.isnan(x):
+            return True
+        else:
+            return False
+
     def simSeason(self):
         resultsTable = self.pastResults.copy()
         resultsTable['winPoints'] = resultsTable.apply(lambda x:
-                                                     x['winPoints'] if not np.isnan(x['winPoints'])
+                                                     x['winPoints'] if not self._isNoneNa(x['winPoints'])
                                                      #else random.uniform(100,120),
                                                      else self._bestLineup(x['winTeam'],x['winWeek'],self.predictionValues,self.replacementValues),
                                                      axis=1)
         
         resultsTable['winPointsAgs'] = resultsTable.apply(lambda x:
                                                   0 if x['winOpp'] is None else
-                                                  x['winPointsAgs'] if not np.isnan(x['winPointsAgs'])
+                                                  x['winPointsAgs'] if not self._isNoneNa(x['winPointsAgs'])
                                                   else resultsTable[(
                                                       (resultsTable['winSeason'] == x['winSeason']) &
                                                       (resultsTable['winWeek'] == x['winWeek']) &
@@ -42,17 +50,17 @@ class leagueSimulation(object):
                                                       )].winPoints.values[0],
                                                   axis=1)
         resultsTable['winWin'] = resultsTable.apply(lambda x:
-                                                  x['winWin'] if not np.isnan(x['winWin'])
+                                                  x['winWin'] if not self._isNoneNa(x['winWin'])
                                                   else 1 if x['winPoints'] > x['winPointsAgs']
                                                   else 0,
                                                   axis=1)
         resultsTable['winLoss'] = resultsTable.apply(lambda x:
-                                                  x['winLoss'] if not np.isnan(x['winLoss'])
+                                                  x['winLoss'] if not self._isNoneNa(x['winLoss'])
                                                   else 1 if x['winPoints'] < x['winPointsAgs']
                                                   else 0,
                                                   axis=1)
         resultsTable['winTie'] = resultsTable.apply(lambda x:
-                                                  x['winTie'] if not np.isnan(x['winTie'])
+                                                  x['winTie'] if not self._isNoneNa(x['winTie'])
                                                   else 1 if x['winPoints'] == x['winPointsAgs']
                                                   else 0,
                                                   axis=1)
@@ -107,8 +115,7 @@ class leagueSimulation(object):
 
     def _bestPlayer(self, pos,roster,replace):
         randMean = replace[pos['replace']]['replaceMean']
-        randVar = replace[pos['replace']]['replaceVar']
-        randSkew = replace[pos['replace']]['replaceSkew']
+        randDistr = [float(x) if x != '' else 0 for x in replace[pos['replace']]['replaceDistr'].split(',')]
         posRoster = roster[pos['replace']]
         randNumbs = [random.uniform(0,1) for x in posRoster.index]
         avail = posRoster[(posRoster.playProb.gt(randNumbs)) &
@@ -116,14 +123,10 @@ class leagueSimulation(object):
                         (posRoster.predictionValue >= randMean)
                           ]
         if avail.empty:
-            playerValue = skewnorm.rvs(a=randSkew,
-                                              loc=randMean,
-                                              scale=math.sqrt(randVar))
+            playerValue = random.choice(randDistr)
         else:
             bestPlayer = avail.loc[avail['predictionValue'].idxmax()]
             self.playersUsed.append(bestPlayer['playerId'])
-            playerValue = skewnorm.rvs(a=bestPlayer['predictionSkew'],
-                                              loc=bestPlayer['predictionValue'],
-                                              scale=math.sqrt(bestPlayer['predictionVar'])*2)
+            playerValue = random.choice([float(x) for x in bestPlayer['predictionDistr'].split(',')])
         return playerValue
 

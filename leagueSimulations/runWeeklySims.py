@@ -12,7 +12,7 @@ from DOConn import connection
 from DOsshTunnel import DOConnect
 
 season = 2020
-week = 2
+week = 0
 
 pd.set_option('display.max_columns', 12)
 with DOConnect() as tunnel:
@@ -48,11 +48,9 @@ with DOConnect() as tunnel:
                     ['playerId',
                      'playerPosition',
                      'predictionValue',
-                     'predictionVar',
-                     'predictionSkew',
+                     'predictionDistr',
                      'playProb'
                      ]]
-        
     except Exception as e:
         print(str(e))
 
