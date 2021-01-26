@@ -18,8 +18,8 @@ week = 12
 
 pd.set_option('display.max_columns', 12)
 while True:
-    season = random.choice(range(2017,2021))
-    week = random.choice(range(0,17))
+    season = 2018#random.choice(range(2017,2021))
+    week = 0#random.choice(range(0,17))
     print(season,week)
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
@@ -97,7 +97,14 @@ while True:
     runCount = 10
     for i in range(1,runCount):
         start = time.clock()
-        sim.simSeason()
+        status = True
+        while status:
+            try:
+                sim.simSeason()
+                status = False
+            except:
+            traceback.print_exc() 
+            
         results = sim.leagueResults()
         resultsTable = resultsTable.add(results,fill_value=0)
         table2['Points'] = table2.apply(lambda x: x['Points'] + [round(results.loc[results.index==x['Names']].iloc[0]['winPoints'],2)],axis=1)
