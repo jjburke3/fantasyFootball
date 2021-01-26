@@ -103,7 +103,7 @@ while True:
                 sim.simSeason()
                 status = False
             except:
-            traceback.print_exc() 
+                traceback.print_exc() 
             
         results = sim.leagueResults()
         resultsTable = resultsTable.add(results,fill_value=0)
