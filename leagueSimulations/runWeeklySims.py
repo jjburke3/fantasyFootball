@@ -93,9 +93,9 @@ while True:
             fails += 1
             with DOConnect() as tunnel:
                 c, conn = connection(tunnel)
-                c.execute('''insert intoleagueSims.simErrors
-                              values (%d, %d, '%s', current_timestamp());''' % (
-                                  season, week, str(e)))
+                c.execute('''insert into leagueSims.simErrors
+                              values (%d, %d, %d, %d, '%s', current_timestamp());''' % (
+                                  season, week, fails, 0, str(e)))
                 conn.commit()
                 conn.close()
     if fails >= 100:
@@ -122,9 +122,9 @@ while True:
                 fails += 1
                 with DOConnect() as tunnel:
                     c, conn = connection(tunnel)
-                    c.execute('''insert intoleagueSims.simErrors
-                                  values (%d, %d, '%s', current_timestamp());''' % (
-                                      season, week, str(e)))
+                    c.execute('''insert into leagueSims.simErrors
+                                  values (%d, %d, %d, %d, '%s', current_timestamp());''' % (
+                                      season, week, fails, i, str(e)))
                     conn.commit()
                     conn.close()
         if fails >= 100:
