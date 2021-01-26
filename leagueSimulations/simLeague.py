@@ -80,25 +80,70 @@ class leagueSimulation(object):
         playerTeams['playoffs'] = [int(x) for x in playerTeams.index.isin(playoffTeams.index)]
 
         ##sim week 14
-##        print(resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[2]) &
-##                               (resultsTable['winWeek']==14),['winPoints']].get_value())
-##        if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[2]) &
-##                               (resultsTable['winWeek']==14),['winPoints']].values()[0] >
-##            resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[5]) &
-##                               (resultsTable['winWeek']==14),['winPoints']].values()[0]):
-##            quarter1 = 2
-##        else:
-##            quarter1 = 5
-                
-            
+        if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[2]) &
+                               (resultsTable['winWeek']==14),['winPoints']].iloc[0,0] >
+            resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[5]) &
+                               (resultsTable['winWeek']==14),['winPoints']].iloc[0,0]):
+            quarter1 = 2
+        else:
+            quarter1 = 5
 
+        
+        if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[3]) &
+                               (resultsTable['winWeek']==14),['winPoints']].iloc[0,0] >
+            resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[4]) &
+                               (resultsTable['winWeek']==14),['winPoints']].iloc[0,0]):
+            quarter2 = 3
+        else:
+            quarter2 = 4
+            
         ## sim week 15
+        if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[0]) &
+                               (resultsTable['winWeek']==15),['winPoints']].iloc[0,0] >
+            resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[quarter2]) &
+                               (resultsTable['winWeek']==15),['winPoints']].iloc[0,0]):
+            semi1 = 0
+            semi1Loss = quarter2
+        else:
+            semi1 = quarter2
+            semi1Loss = 0
+            
+        if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[1]) &
+                               (resultsTable['winWeek']==15),['winPoints']].iloc[0,0] >
+            resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[quarter1]) &
+                               (resultsTable['winWeek']==15),['winPoints']].iloc[0,0]):
+            semi2 = 1
+            semi2Loss = quarter1
+        else:
+            semi2 = quarter1
+            semi2Loss = 1
 
         ## sim week 16
+        
+        if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[semi1]) &
+                               (resultsTable['winWeek']==16),['winPoints']].iloc[0,0] >
+            resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[semi2]) &
+                               (resultsTable['winWeek']==16),['winPoints']].iloc[0,0]):
+            champ = semi1
+            runup = semi2
+        else:
+            champ = semi2
+            runup = semi1
+            
+        
+        if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[semi1Loss]) &
+                               (resultsTable['winWeek']==16),['winPoints']].iloc[0,0] >
+            resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[semi2Loss]) &
+                               (resultsTable['winWeek']==16),['winPoints']].iloc[0,0]):
+            thirdplace = semi1Loss
+        else:
+            thirdplace = semi2Loss
+            
+        playerTeams['firstPlace'] = [int(x) for x in playerTeams.index == playoffTeams.index[0]]
 
-        #playerTeams['firstPlace'] = 0
-        #playerTeams['secondPlace'] = 0
-        #playerTeams['thirdPlace'] = 0
+        playerTeams['champ'] = [int(x) for x in playerTeams.index == playoffTeams.index[champ]]
+        playerTeams['runnerup'] = [int(x) for x in playerTeams.index == playoffTeams.index[runup]]
+        playerTeams['thirdPlace'] = [int(x) for x in playerTeams.index == playoffTeams.index[thirdplace]]
         self.playerTeams = playerTeams
 
     def leagueResults(self):

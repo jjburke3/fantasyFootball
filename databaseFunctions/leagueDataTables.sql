@@ -31,6 +31,23 @@ index(playerId), index(playerESPNId)
 
 -- table for all drafted player data
 
+
+create table la_liga_data.draftedPlayerData
+(
+	draftYear smallint,
+    draftRound tinyint,
+    draftPick smallint,
+    selectingTeam varchar(20),
+    player int,
+    playerESPNId int,
+    playerPosition varchar(12),
+    playerTeam int,
+    dataCreate datetime,
+primary key (draftYear, draftRound, draftPick),
+index(selectingTeam),
+index(player)
+);
+
 -- table for all payout info
 
 -- table for all rule data
