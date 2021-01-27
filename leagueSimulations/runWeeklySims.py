@@ -4,6 +4,7 @@ import traceback
 import time
 import pandas as pd
 import random
+from timeit import timeit
 
 import sys
 sys.path.insert(0,'..')
@@ -13,13 +14,15 @@ from DOConn import connection
 from DOsshTunnel import DOConnect
 from dbFuncs import InsertTable
 
-season = 2020
+season = 2019
 week = 12
-
-pd.set_option('display.max_columns', 12)
+runCount = 50
 while True:
     season = random.choice(range(2017,2021))
+
     week = random.choice(range(0,17))
+    season = 2020
+    week = 0
     print(season,week)
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
@@ -30,7 +33,7 @@ while True:
         result = c.fetchone()
         if result is None:
             None
-        elif result[0] >= 10000:
+        elif result[0] >= 2000:
             conn.close()
             continue
         
@@ -85,21 +88,11 @@ while True:
     sim = leagueSimulation(rostersDict,replaceValues,results)
     status = True
     fails = 0
-    while status and fails < 100:
-        try:
-            sim.simSeason()
-            status = False
-        except Exception as e:
-            fails += 1
-            with DOConnect() as tunnel:
-                c, conn = connection(tunnel)
-                c.execute('''insert into   leagueSims.simErrors
-                              values (%d, %d, %d, %d, '%s', current_timestamp());''' % (
-                                  season, week, fails, 0, str(e).replace("'","\\'")))
-                conn.commit()
-                conn.close()
-    if fails >= 100:
-        continue
+    try:
+        sim.simSeason()
+    except Exception as e:
+        fails += 1
+        traceback.print_exc()
 
     results = sim.leagueResults()
     resultsTable = results.copy()
@@ -110,25 +103,21 @@ while True:
     table2['Losses'] = [[x] for x in results['winLoss']]
     table2['HighPoints'] = [[x] for x in results['weeklyHighPoints']]
     print(time.clock()-start)
-    runCount = 10
     for i in range(1,runCount):
         start = time.clock()
         status = True
-        while status and fails < 100:
-            try:
-                sim.simSeason()
-                status = False
-            except Exception as e:
-                fails += 1
-                with DOConnect() as tunnel:
-                    c, conn = connection(tunnel)
-                    c.execute('''insert into leagueSims.simErrors
-                                  values (%d, %d, %d, %d, '%s', current_timestamp());''' % (
-                                      season, week, fails, i, str(e).replace("'","\'")))
-                    conn.commit()
-                    conn.close()
-        if fails >= 100:
-            continue
+        try:
+            sim.simSeason()
+            status = False
+        except Exception as e:
+            fails += 1
+            with DOConnect() as tunnel:
+                c, conn = connection(tunnel)
+                c.execute('''insert into leagueSims.simErrors
+                              values (%d, %d, %d, %d, '%s', current_timestamp());''' % (
+                                  season, week, fails, i, str(e).replace("'","\'")))
+                conn.commit()
+                conn.close()
             
         results = sim.leagueResults()
         resultsTable = resultsTable.add(results,fill_value=0)
@@ -137,8 +126,7 @@ while True:
         table2['Losses'] = table2.apply(lambda x: x['Losses'] + [results.loc[results.index==x['Names']].iloc[0]['winLoss']],axis=1)
         table2['HighPoints'] = table2.apply(lambda x: x['HighPoints'] + [results.loc[results.index==x['Names']].iloc[0]['weeklyHighPoints']],axis=1)
         print(time.clock()-start)
-    if fails >= 100:
-        continue
+
 
     sqlStatement = '''insert into leagueSims.standings values %s
                     on duplicate key update
@@ -154,6 +142,7 @@ while True:
                     standHighPoints = standHighPoints + values(standHighPoints),
                     standLowPoints = standLowPoints + values(standLowPoints),
                     standFirstPlace = standFirstPlace + values(standFirstPlace),
+                    standThirdPlace = standThirdPlace + values(standThirdPlace),
                     standBye = standBye + values(standBye),
                     standWeeklyHighPoints = standWeeklyHighPoints + values(standWeeklyHighPoints),
                     standWeeklyHighPointsArray = concat(standWeeklyHighPointsArray,',',values(standWeeklyHighPointsArray));
