@@ -89,7 +89,7 @@ def pullLeagueSchedule(conn, year):
                             str(months[date.split(' ')[0]]).zfill(2) + "-" +
                             str(date.split(' ')[1]).zfill(2))
 
-                if time[-2:] == 'PM':
+                if (time[-2:] == 'PM') & (time[:2] != '12'):
                     time = (str(int(time.split(':')[0])+12).zfill(2) + ":" +
                             str(time.split(':')[1][:-2]).zfill(2) + ":" +
                                 "00")

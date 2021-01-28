@@ -62,7 +62,8 @@ create table leagueSims.weeklyModelPredictWeekData
 	seasonRushes int,
 	priorWeekRushes tinyint,
 	
-	primary key(predictionSeason, predictionWeek, playerId),
+	primary key(predictionSeason, predictionWeek, playerId
+	index(playerId),
 	index(playerTeam),
 	index(playerPosition),
 	index(chartVersion),
@@ -81,7 +82,8 @@ create table leagueSims.weeklyModelPredictedWeekData
 	gamePlayed tinyint,
 	seasonDone tinyint,
 	
-	primary key(predictionSeason,predictedWeek,playerId)
+	primary key(predictionSeason,predictedWeek,playerId),
+	index(playerId)
 );
 
 drop table if exists leagueSims.weeklyModelPredictedWeekOppTeamData;
@@ -105,6 +107,10 @@ create table leagueSims.weeklyModelPredictedWeekOppTeamData
 	oppPriorWeekBye tinyint,
 	oppFollowWeekBye tinyint,
 	
-	primary key(predictionSeason,predictionWeek,predictedWeek,playerId)
+	primary key(predictionSeason,predictionWeek,predictedWeek,playerId),
+	index(playerId),
+	index(chartVersion),
+	index(playerTeam),
+	index(oppTeam)
 );
 	

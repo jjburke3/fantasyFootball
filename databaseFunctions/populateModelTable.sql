@@ -89,7 +89,7 @@ round(totalPoints,1),
 gamePlayed,
 null
 from leagueSims.weeklyModelPlayerData
-join (select distinct statYear as listYear, statWeek as listWeek from scrapped_data2.playerStats) b on predictionSeason = listYear
+join (select distinct statYear as listYear, statWeek as listWeek from scrapped_data2.playerStats where statWeek <= 16) b on predictionSeason = listYear
 left join scrapped_data2.playerStats on predictionSeason = statYear and listWeek = statWeek and statPlayer = playerId
 on duplicate key update actualPoints = values(actualPoints),
 	gamePlayed = values(gamePlayed),
@@ -103,17 +103,22 @@ SET @@group_concat_max_len = 9999999;
 
 drop table if exists leagueSims.chartVersion;
 create table leagueSims.chartVersion
-(chartSeason int, predWeek int, chartVersion int,
-primary key (chartSeason, predWeek));
+(chartSeason int, predWeek tinyint, chartTeam tinyint, chartVersion int,
+primary key (chartSeason, predWeek,chartTeam));
 insert into leagueSims.chartVersion
-select chartSeason, weekNum as predWeek, 
+select chartSeason, weekNum as predWeek, chartTeam,
 convert(substring_index(
 	group_concat(distinct b.chartVersion order by abs(chartWeek - weekNum) + if(chartWeek > weekNum,2,0),
-		case when chartWeek < weekNum then dataDateTime else -dataDateTime end desc
+		case when chartWeek <= weekNum then dataDateTime else -dataDateTime end desc
 ),',',1),unsigned integer) as chartVersion
-from (select distinct chartSeason, c.chartVersion, chartWeek, dataDateTime from scrapped_data2.depthCharts c) b
+from (select distinct chartSeason, c.chartVersion, c.chartTeam,
+	ifnull(if(date_sub(dataDateTime,interval 4 hour) > concat(nflDate,' ',nflTime),1,0)+chartWeek,chartWeek) as chartWeek, 
+    dataDateTime from scrapped_data2.depthCharts c
+	left join scrapped_data2.nflSchedule on chartSeason = nflSeason and
+    chartWeek = nflWeek and (chartTeam = nflRoadTeam or chartTeam = nflHomeTeam) ) b
 join refData.seasonWeeks
-group by 1,2;
+where chartSeason = 2020
+group by 1,2,3;
 
 -- build data specific to prediction week
 
@@ -122,7 +127,7 @@ insert into leagueSims.weeklyModelPredictWeekData
 playerId)
 select predictionSeason, 
 weekNum as predictionWeek,
-a.chartVersion,
+min(a.chartVersion),
 playerId
 
 from leagueSims.weeklyModelPlayerData
@@ -131,11 +136,26 @@ join refData.seasonWeeks on
 	weekNum <= 1 + ifnull((select right(max(winSeason*100+winWeek),2) from la_liga_data.wins),0))
 left join leagueSims.chartVersion a on predictionSeason = chartSeason and 
 	weekNum = predWeek
+group by predictionSeason, weekNum, playerId
 on duplicate key update chartVersion = values(chartVersion);
 
 
 
 
+update leagueSims.weeklyModelPredictWeekData a
+join (
+select chartVersion, chartPlayer,
+substring_index(group_concat(distinct chartTeam),',',1) as chartTeam
+from scrapped_data2.depthCharts 
+group by 1,2) b on a.chartVersion = b.chartVersion and playerId = chartPlayer
+set playerTeam = chartTeam;
+
+
+update leagueSims.weeklyModelPredictWeekData b
+join leagueSims.chartVersion a on predictionSeason = chartSeason and 
+	predictionWeek = predWeek and playerTeam = chartTeam
+set b.chartVersion = a.chartVersion;
+	
 update leagueSims.weeklyModelPredictWeekData a
 join (
 select chartVersion, chartPlayer,
@@ -184,33 +204,17 @@ set priorWeekBye = case when nflSeason is null then 1 else 0 end;
 
 insert into leagueSims.weeklyModelPredictedWeekOppTeamData
 (predictionSeason, predictionWeek, predictedWeek,
-playerId, chartVersion)
+playerId, chartVersion, playerTeam)
 select predictionSeason, 
-a.weekNum as predictionWeek,
+predictionWeek,
 b.weekNum as predictedWeek,
 playerId,
-chartVersion
-
-from leagueSims.weeklyModelPlayerData
-join refData.seasonWeeks a on 
-	(predictionSeason < ifnull((select max(winSeason) from la_liga_data.wins),0) or 
-	a.weekNum <= 1 + ifnull((select right(max(winSeason*100+winWeek),2) from la_liga_data.wins),0))
-join refData.seasonWeeks b on a.weekNum <= b.weekNum and b.weekNum > 0
-left join leagueSims.chartVersion a on predictionSeason = chartSeason and 
-	a.weekNum = predWeek
-on duplicate key update chartVersion = values(chartVersion);
-
-update leagueSims.weeklyModelPredictedWeekOppTeamData a
-JOin (select distinct playerId, playerTeam from refData.playerNames where playerPosition = 'D/ST') b on a.playerId = b.playerId
-set a.playerTeam = b.playerTeam;
-
-update leagueSims.weeklyModelPredictedWeekOppTeamData a
-join (
-select chartVersion, chartPlayer,
-substring_index(group_concat(distinct chartTeam),',',1) as chartTeam
-from scrapped_data2.depthCharts 
-group by 1,2) b on a.chartVersion = b.chartVersion and playerId = chartPlayer
-set playerTeam = chartTeam;
+chartVersion,
+playerTeam
+from leagueSims.weeklyModelPredictWeekData
+join refData.seasonWeeks b on predictionWeek <= b.weekNum and b.weekNum > 0
+on duplicate key update chartVersion = values(chartVersion),
+	playerTeam = values(playerTeam);
 
 
 
@@ -222,6 +226,34 @@ set oppTeam = case when nflHomeTeam = playerTeam then nflRoadTeam else nflHomeTe
 
 update leagueSims.weeklyModelPredictedWeekOppTeamData
 set byeWeek = case when oppTeam is null then 1 else 0 end;
+
+
+update leagueSims.weeklyModelPredictedWeekOppTeamData
+left join scrapped_data2.nflSchedule on nflSeason = predictionSeason and nflWeek = predictedWeek
+and (nflHomeTeam = playerTeam)
+set homeTeam = case when nflSeason is not null then 1 else 0 end;
+
+
+update leagueSims.weeklyModelPredictedWeekOppTeamData
+left join scrapped_data2.nflSchedule on nflSeason = predictionSeason and nflWeek = (predictedWeek - 1)
+and (nflHomeTeam = playerTeam or nflRoadTeam = playerTeam)
+set priorWeekBye = case when nflSeason is null then 1 else 0 end;
+
+update leagueSims.weeklyModelPredictedWeekOppTeamData
+left join scrapped_data2.nflSchedule on nflSeason = predictionSeason and nflWeek = (predictedWeek + 1)
+and (nflHomeTeam = playerTeam or nflRoadTeam = playerTeam)
+set followWeekBye = case when nflSeason is null then 1 else 0 end;
+
+
+update leagueSims.weeklyModelPredictedWeekOppTeamData
+left join scrapped_data2.nflSchedule on nflSeason = predictionSeason and nflWeek = (predictedWeek - 1)
+and (nflHomeTeam = oppTeam or nflRoadTeam = oppTeam)
+set oppPriorWeekBye = case when nflSeason is null and oppTeam is not null then 1 else 0 end;
+
+update leagueSims.weeklyModelPredictedWeekOppTeamData
+left join scrapped_data2.nflSchedule on nflSeason = predictionSeason and nflWeek = (predictedWeek + 1)
+and (nflHomeTeam = oppTeam or nflRoadTeam = oppTeam)
+set oppFollowWeekBye = case when nflSeason is null and oppTeam is not null then 1 else 0 end;
 
 update 
 leagueSims.weeklyModelPredictedWeekData a
@@ -253,7 +285,7 @@ ifnull(target,0) as priorWeekTargets,
 		) b
 		join refData.seasonWeeks on weekNum between 1 and 16
         left join scrapped_data2.playerStats on statYear = playerYear and statWeek = weekNum
-        and statPlayer = playerId) a, (select @match := '', @seasonPoints := 0, @seasonRushs := 0,
+        and statPlayer = playerId) a, (select @match := '', @seasonPoints := 0, @seasonRushes := 0,
 	@seasonGames := 0, @seasonTargets := 0) t 
 order by 3,1,2) b on statYear = predictionSeason and 
 	statWeek = predictionWeek - case when priorWeekBye = 1 then 2 else 1 end 

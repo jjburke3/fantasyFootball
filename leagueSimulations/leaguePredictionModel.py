@@ -138,11 +138,10 @@ class leaguePredictionTree():
         self.data = predictionData
         self.playedIndex = predictionData.gamePlayed==1
         self.encoder = pp.OneHotEncoder(handle_unknown='ignore',sparse=False)
+        self.encoderPlayed = pp.OneHotEncoder(handle_unknown='ignore',sparse=False)
         self._encodeXSet(self.data,fit=True)
+        self._encodePlayedModel(self.data,fit=True)
         self.pointsModel = RandomForestRegressor(n_estimators=treeCount,max_features="sqrt")
-        self.varModel = RandomForestRegressor(n_estimators=treeCount,max_features="sqrt")
-        self.skewModel = RandomForestRegressor(n_estimators=treeCount,max_features="sqrt")
-        self.kurtosisModel = RandomForestRegressor(n_estimators=treeCount,max_features="sqrt")
         self.playedModel = RandomForestClassifier(n_estimators=treeCount,max_features="sqrt")
         
         self._buildPlayedModel()
@@ -194,7 +193,7 @@ class leaguePredictionTree():
                           )
 
     def _buildPlayedModel(self):
-        self.playedModel.fit(self._encodeXSet(self.data),
+        self.playedModel.fit(self._encodePlayedModel(self.data),
                              self.data[['gamePlayed']].fillna(0))
 
 
@@ -204,7 +203,7 @@ class leaguePredictionTree():
         #skewModel = self.skewModel.predict(self._encodeXSet(predictedData))
         #kurtosisModel = self.kurtosisModel.predict(self._encodeXSet(predictedData))
         predRange = self._pred_ints(self.pointsModel,self._encodeXSet(predictedData))
-        playedModel = self.playedModel.predict_proba(self._encodeXSet(predictedData))
+        playedModel = self.playedModel.predict_proba(self._encodePlayedModel(predictedData))
         seasonEndedModel = None
         playersData = pd.DataFrame({'playerId' : predictedData['playerId'],
                                     'modelSeason' : predictedData['predictionSeason'],
@@ -233,14 +232,34 @@ class leaguePredictionTree():
         return np.concatenate((catVars,numVars1,numVars2),axis=1)
 
     def _encodePlayedModel(self,predictedData,fit=False):
-        catFrame = predictedData[self.catVariables].applymap(str).fillna('')
+        playedCatVariables = [
+                             'playerStatus',
+                             'chartPosition',
+                             'chartRank',
+                             'chartRole',
+                             'byeWeek',
+                             'predictPriorBye',
+                             'homeTeam',
+                             'priorWeekBye',
+                             'followWeekBye',
+                             'oppPriorWeekBye',
+                             'oppFollowWeekBye',
+                             'sameTeam',
+                             'qb1Status',
+                             'rb1Status',
+                             'rb2Status',
+                             'wr1Status',
+                             'wr2Status',
+                             'wr3Status',
+                             'te1Status']
+        catFramePlayed = predictedData[playedCatVariables].applymap(str).fillna('')
         if fit:
-            catVars = self.encoder.fit_transform(catFrame)
+            catVarsPlayed = self.encoderPlayed.fit_transform(catFramePlayed)
         else:
-            catVars = self.encoder.transform(catFrame)
+            catVarsPlayed = self.encoderPlayed.transform(catFramePlayed)
         playerdNumReplaceZeroVariables = [
                              'seasonGames',
-                             'priorGame',
+                             'gamePlayed',
                              'seasonTargets',
                              'priorWeekTargets',
                              'seasonRushes',
@@ -248,13 +267,14 @@ class leaguePredictionTree():
                              'weeksUntil'
                              ]
         playedNumReplaceOtherVariables = [
-            'Age',
-            'Experience',
-            'PlayerRating',
-            'PlayerInjury'
+            'age',
+            'experience',
+            'playerRating',
+            'playerInjury'
             ]
-        numVars1 = predictedData[playerdNumReplaceZeroVariables].fillna(0)
-        numVars2 = predictedData[playedNumReplaceOtherVariables].fillna(-9999)
+        numVars1Played = predictedData[playerdNumReplaceZeroVariables].fillna(0)
+        numVars2Played = predictedData[playedNumReplaceOtherVariables].fillna(-9999)
+        return np.concatenate((catVarsPlayed,numVars1Played,numVars2Played),axis=1)
 
     def _pred_ints(self,model, X):
         columnRanges = []
