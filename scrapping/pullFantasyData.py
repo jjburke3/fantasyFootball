@@ -120,7 +120,7 @@ if daysToWeekStart <= 50 and time != 'Night':
             traceback.print_exc() 
         try:
             c.execute('''select max(chartVersion) as version
-                     from scrapped_data.depthCharts''')
+                     from scrapped_data2.depthCharts''')
             versionNo = (c.fetchone()[0]) + 1
             sql = pullDepthCharts(conn,year,weekUsed,day,time,versionNo)
             for statement in sql:
