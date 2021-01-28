@@ -48,7 +48,7 @@ create table leagueSims.weeklyModelPredictWeekData
 	
 	priorWeekBye tinyint,
 	
-	priorWeekPlayerStatus varchar(7),
+	priorWeekPlayerStatus varchar(15),
 	priorWeekChartPosition varchar(7),
 	priorWeekChartRank tinyint,
 	

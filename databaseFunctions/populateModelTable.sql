@@ -186,6 +186,12 @@ set playerPosition = 'D/ST'
 where playerId between -150 and -1;
 	
 update leagueSims.weeklyModelPredictWeekData a
+join leagueSims.weeklyModelPredictWeekData b on a.predictionSeason = b.predictionSeason
+	and a.predictionWeek = b.predictionWeek + 1 and a.playerId = b.playerId
+set a.priorWeekPlayerStatus = b.playerStatus, a.priorWeekChartPosition = b.chartPosition,
+	a.priorWeekChartRank = b.chartRank;
+	
+update leagueSims.weeklyModelPredictWeekData a
 left join refData.playerNames b on a.playerId = b.playerId and a.playerTeam = b.playerTeam 
 	and a.predictionSeason = b.playerYear + 1
 set sameTeam = case when b.playerId is null then 0 else 1 end;

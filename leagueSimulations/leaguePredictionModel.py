@@ -142,55 +142,18 @@ class leaguePredictionTree():
         self._encodeXSet(self.data,fit=True)
         self._encodePlayedModel(self.data,fit=True)
         self.pointsModel = RandomForestRegressor(n_estimators=treeCount,max_features="sqrt")
-        self.playedModel = RandomForestClassifier(n_estimators=treeCount,max_features="sqrt")
+        self.playedModel = RandomForestClassifier(n_estimators=treeCount,max_features=None)
         
         self._buildPlayedModel()
         print('played model built')
         self._buildPointsModel()
-##        print('points model built')
-##        self._buildVarModel()
-##        print('var model built')
-##        self._buildSkewModel()
-##        print('skew model built')
-##        self._buildKurtosisModel()
-##        print('kurtosis model built')
+        print('points model built')
 
         
         
     def _buildPointsModel(self):
         self.pointsModel.fit(self._encodeXSet(self.data.loc[(self.playedIndex)]),
                              self.data.loc[(self.playedIndex),['actualPoints']].fillna(0))
-
-    def _buildVarModel(self):
-        actuals = list(self.data.loc[(self.playedIndex),['actualPoints']].fillna(0).values)
-        predictions = list(self.pointsModel.predict(self._encodeXSet(
-            self.data.loc[(self.playedIndex)])))
-        self.varModel.fit(self._encodeXSet(self.data.loc[(self.playedIndex)]),
-                          [(x1 - x2)**2 for (x1,x2) in zip(predictions,
-                                                           actuals)])
-
-    def _buildSkewModel(self):
-        actuals = list(self.data.loc[(self.playedIndex),['actualPoints']].fillna(0).values)
-        predictions = list(self.pointsModel.predict(self._encodeXSet(
-            self.data.loc[(self.playedIndex)])))
-        variances = list(self.varModel.predict(self._encodeXSet(
-            self.data.loc[(self.playedIndex)])))
-        self.skewModel.fit(self._encodeXSet(self.data.loc[(self.playedIndex)]),
-                          [0 if x3 <0 else ((x1 - x2)/math.sqrt(x3))**3 for (x1,x2,x3) in zip(predictions,
-                                                              actuals,
-                                                              variances)])
-
-    def _buildKurtosisModel(self):
-        actuals = list(self.data.loc[(self.playedIndex),['actualPoints']].fillna(0).values)
-        predictions = list(self.pointsModel.predict(self._encodeXSet(
-            self.data.loc[(self.playedIndex)])))
-        variances = list(self.varModel.predict(self._encodeXSet(
-            self.data.loc[(self.playedIndex)])))
-        self.kurtosisModel.fit(self._encodeXSet(self.data.loc[(self.playedIndex)]),
-                          [0 if x3 <0 else ((x1 - x2)/math.sqrt(x3))**4 for (x1,x2,x3) in zip(predictions,
-                                                                           actuals,
-                                                                           variances)]
-                          )
 
     def _buildPlayedModel(self):
         self.playedModel.fit(self._encodePlayedModel(self.data),
@@ -199,9 +162,6 @@ class leaguePredictionTree():
 
     def returnSimsModels(self, predictedData):
         pointsModelPred = self.pointsModel.predict(self._encodeXSet(predictedData))
-        #varianceModel = self.varModel.predict(self._encodeXSet(predictedData))
-        #skewModel = self.skewModel.predict(self._encodeXSet(predictedData))
-        #kurtosisModel = self.kurtosisModel.predict(self._encodeXSet(predictedData))
         predRange = self._pred_ints(self.pointsModel,self._encodeXSet(predictedData))
         playedModel = self.playedModel.predict_proba(self._encodePlayedModel(predictedData))
         seasonEndedModel = None
@@ -211,9 +171,6 @@ class leaguePredictionTree():
                                     'predictedWeek' : predictedData['predictedWeek'],
                                     'modelPrediction' : pointsModelPred,
                                     'predRange' : predRange,
-                                    #'modelVariance' : varianceModel,
-                                    #'modelSkew' : skewModel,
-                                    #'modelKurtosis' : kurtosisModel,
                                     'modelPlayProb' : playedModel[:,self.playedModel.classes_.tolist().index(1)]})
 
         return playersData
@@ -238,13 +195,13 @@ class leaguePredictionTree():
                              'chartRank',
                              'chartRole',
                              'byeWeek',
-                             'predictPriorBye',
                              'homeTeam',
                              'priorWeekBye',
                              'followWeekBye',
-                             'oppPriorWeekBye',
-                             'oppFollowWeekBye',
                              'sameTeam',
+                             'priorWeekPlayerStatus',
+                             'priorWeekChartPosition',
+                             'priorWeekChartRank',
                              'qb1Status',
                              'rb1Status',
                              'rb2Status',
@@ -258,12 +215,6 @@ class leaguePredictionTree():
         else:
             catVarsPlayed = self.encoderPlayed.transform(catFramePlayed)
         playerdNumReplaceZeroVariables = [
-                             'seasonGames',
-                             'gamePlayed',
-                             'seasonTargets',
-                             'priorWeekTargets',
-                             'seasonRushes',
-                             'priorWeekRushes',
                              'weeksUntil'
                              ]
         playedNumReplaceOtherVariables = [
