@@ -51,7 +51,7 @@ b.playerPosition,
 c.predictedWeek - b.predictionWeek as weeksUntil,
 
 ifnull(case when b.predictionWeek = 0 then playerStatus
-else b.injDesignation end,0) as playerStatus,
+else b.injDesignation end,'') as playerStatus,
 b.chartPosition,
 b.chartRank,
 b.chartRole,
