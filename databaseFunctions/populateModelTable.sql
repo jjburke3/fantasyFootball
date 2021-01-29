@@ -104,7 +104,7 @@ SET @@group_concat_max_len = 9999999;
 drop table if exists leagueSims.chartVersion;
 create table leagueSims.chartVersion
 (chartSeason int, predWeek tinyint, chartTeam tinyint, chartVersion int,
-primary key (chartSeason, predWeek,chartTeam));
+primary key (chartSeason, predWeek,chartTeam), index(predWeek), index(chartTeam));
 insert into leagueSims.chartVersion
 select chartSeason, weekNum as predWeek, chartTeam,
 convert(substring_index(
@@ -117,7 +117,6 @@ from (select distinct chartSeason, c.chartVersion, c.chartTeam,
 	left join scrapped_data2.nflSchedule on chartSeason = nflSeason and
     chartWeek = nflWeek and (chartTeam = nflRoadTeam or chartTeam = nflHomeTeam) ) b
 join refData.seasonWeeks
-where chartSeason = 2020
 group by 1,2,3;
 
 -- build data specific to prediction week
@@ -175,6 +174,24 @@ set playerTeam = chartTeam, playerPosition = playerPos, a.chartPosition = b.char
 	playerStatus = injuryStatus, a.chartRank = b.chartRank, a.chartRole = b.chartRole,
     a.thirdDownBack = b.thirdDownBack, goalLineBack = goalLine,
     pr = puntReturner, kr = kickReturner;
+	
+update leagueSims.weeklyModelPredictWeekData a
+join (select injSeason, injWeek, injPlayer,
+		ifnull(substring_index(group_concat(case when injDesignation = 'IR' and injDNP = 0 then 'Off-IR' 
+		when injDesignation != '' then injDesignation end separator '|'),'|',1),'') as injDesignation
+	  from scrapped_data2.injuredStatus
+	  group by 1,2,3 ) b on injSeason = predictionSeason and injWeek = predictionWeek
+	and injPlayer = playerId
+set a.injDesignation = b.injDesignation;
+
+update leagueSims.weeklyModelPredictWeekData a
+join (select injSeason, injWeek, injPlayer,
+		substring_index(group_concat(case when injDesignation = 'IR' and injDNP = 0 then 'Off-IR' 
+		when injDesignation != '' then injDesignation end separator '|'),'|',1) as injDesignation
+	  from scrapped_data2.injuredStatus
+	  group by 1,2,3 ) b on injSeason = predictionSeason and injWeek + 1 = predictionWeek
+	and injPlayer = playerId
+set a.priorWeekInjDesignation = b.injDesignation;
 	
 update leagueSims.weeklyModelPredictWeekData
 set playerPosition = case 
@@ -270,6 +287,11 @@ on a.predictionSeason = b.predictionSeason and a.playerId = b.playerId
 set a.gamePlayed = 0
 where a.playerId between -150 and -1 and b.byeWeek = 1;
 
+update leagueSims.weeklyModelPredictedWeekData
+join scrapped_data2.injuredStatus on injSeason = predictionSeason and injWeek = predictedWeek
+ and injPlayer = playerId
+ set gamePlayed = 0
+ where gamePlayed = 1 and injDNP = 1 and actualPoints = 0;
  
  -- get player stats
 update leagueSims.weeklyModelPredictWeekData a

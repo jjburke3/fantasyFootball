@@ -94,9 +94,10 @@ class getTeamId(object):
 ## attempts matches, if none exist new player id is created
 
 class getPlayerId:
-    def __init__(self, year, conn, espn=False, depthChart=False,injury=False,stats=False):
+    def __init__(self, year, conn, espn=False, depthChart=False,
+                 injury=False,stats=False,pfr=False):
         self.playerDict = pd.read_sql('''select lower(playerString) as playerString, b.playerId,
-                                        espnId, statsId, depthChartsId,injuryId
+                                        espnId, statsId, depthChartsId,injuryId, pfrId
 
                                       from refData.playerNames b
                                       join refData.playerIds a on a.playerId = b.playerId
@@ -108,6 +109,7 @@ class getPlayerId:
         self.depthDict = {}
         self.injuryDict = {}
         self.statsDict = {}
+        self.pfrDict = {}
         if espn:
             self.espnDict = pd.read_sql('''select espnId, substring_index(group_concat(playerId),',',1) as playerId
                                             from refData.playerIds
@@ -133,9 +135,15 @@ class getPlayerId:
                                          where statsId is not null
                                             group by 1 having count(*) = 1''',
                                        con=conn,index_col='statsId').to_dict('index')
+        if pfr:
+            self.pfrDict = pd.read_sql('''select pfrId, substring_index(group_concat(playerId),',',1) as playerId
+                                            from refData.playerIds
+                                         where pfrId is not null
+                                            group by 1 having count(*) = 1''',
+                                       con=conn,index_col='pfrId').to_dict('index')
 
     def _addPlayer(self, playerName,conn,espnId = 'NULL', depthChartId = 'NULL',
-                   injuryId = 'NULL', statsId = 'NULL'):
+                   injuryId = 'NULL', statsId = 'NULL', pfrId = 'NULL'):
         removeString = ['\.',"'","_",' Jr$',' JR$',' Sr$',' SR$',' III$',' II$',' IV$',' V$',' VI$']
         
         playerApprox = playerName[0]
@@ -176,6 +184,10 @@ class getPlayerId:
             anyId = True
             idCheck += " and statsId is null"
             idUpdate += " statsId = %s " % str(statsId)
+        if pfrId != "NULL":
+            anyId = True
+            idCheck += " and pfrId is null"
+            idUpdate += " pfrId = '%s' " % str(pfrId)
 
         idUpdate += " where playerId = %d"
 
@@ -290,9 +302,13 @@ class getPlayerId:
                 dcId = "'" + depthChartId + "'"
             else:
                 dcId = depthChartId
-            c.execute("insert into refData.playerIds values (%s, %s, %s, %s, %s, '%s')" %
+            if pfrId != 'NULL':
+                pId = "'" + pfrId + "'"
+            else:
+                pId = pfrId
+            c.execute("insert into refData.playerIds values (%s, %s, %s, %s, %s, %s, '%s')" %
                       (str(playerId), str(espnId), str(statsId), str(dcId),
-                       str(injuryId), re.sub(r"(?<!\\)(')","\\'",playerName[0])))
+                       str(injuryId), str(pId), re.sub(r"(?<!\\)(')","\\'",playerName[0])))
             c.execute(self._insertNameString(str(playerId), playerName[0], playerApprox, str(playerName[3]),
                        str(playerName[1]), positionMatch, '-'.join(playerName), "NULL"))
             conn.commit()
@@ -301,9 +317,9 @@ class getPlayerId:
         except Exception as e:
             traceback.print_exc()
             print(re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName)))
-            c.execute("insert into refData.playerName_errors values (null, '%s', '%s', %s, %s, '%s',%s, current_timestamp())" %
+            c.execute("insert into refData.playerName_errors values (null, '%s', '%s', %s, %s, '%s',%s, '%s', current_timestamp())" %
                       (re.sub(r"(?<!\\)(')","\\'",str(e)), re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName)),
-                           str(espnId), str(statsId), str(depthChartId), str(injuryId)))
+                           str(espnId), str(statsId), str(depthChartId), str(injuryId), str(pfrId)))
             conn.commit()
             c.execute("select max(errorId) from refData.playerName_errors")
             result = c.fetchone()
@@ -314,7 +330,7 @@ class getPlayerId:
                 (id, re.sub(r"(?<!\\)(')","\\'",name), approx, year, team, position, re.sub(r"(?<!\\)(')","\\'",totalString), multiSameName))
 
     def playerId(self, playerName, conn, espnId = 'NULL', depthChartId = 'NULL',
-                 injuryId = 'NULL', statsId = 'NULL'):
+                 injuryId = 'NULL', statsId = 'NULL', pfrId = 'NULL'):
         ## playerName is list containing name, team, position, and year
         if espnId in self.espnDict:
             return self.espnDict[espnId]['playerId']
@@ -324,6 +340,8 @@ class getPlayerId:
             return self.injuryDict[injuryId]['playerId']
         elif statsId in self.statsDict:
             return self.statsDict[statsId]['playerId']
+        elif pfrId in self.pfrDict:
+            return self.pfrDict[pfrId]['playerId']
         elif '-'.join(playerName).lower() in self.playerDict:
             playerEntry = self.playerDict['-'.join(playerName).lower()]
             c = conn.cursor()
@@ -333,39 +351,46 @@ class getPlayerId:
                     conn.commit()
                     return playerEntry['playerId']
                 else:
-                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId)
             elif espnId != 'NULL':
                 if playerEntry['espnId'] is None or math.isnan(playerEntry['espnId']):
                     c.execute("update refData.playerIds set espnId = %d where playerId = %d" % (espnId,playerEntry['playerId']))
                     conn.commit()
                     return playerEntry['playerId']
                 else:
-                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId)
             elif depthChartId != 'NULL':
-                if playerEntry['depthChartsId'] is None or math.isnan(playerEntry['depthChartsId']):
+                if playerEntry['depthChartsId'] is None:
                     c.execute("update refData.playerIds set depthChartsId = '%s' where playerId = %d" % (depthChartId,playerEntry['playerId']))
                     conn.commit()
                     return playerEntry['playerId']
                 else:
-                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId)
             elif injuryId != 'NULL':
                 if playerEntry['injuryId'] is None or math.isnan(playerEntry['injuryId']):
                     c.execute("update refData.playerIds set injuryId = %d where playerId = %d" % (injuryId,playerEntry['playerId']))
                     conn.commit()
                     return playerEntry['playerId']
                 else:
-                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId)
+            elif pfrId != 'NULL':
+                if playerEntry['pfrId'] is None:
+                    c.execute("update refData.playerIds set pfrId = '%s' where playerId = %d" % (pfrId,playerEntry['playerId']))
+                    conn.commit()
+                    return playerEntry['playerId']
+                else:
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId)
             else:
                 return playerEntry['playerId']
         else:
             try:
-                return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId)
+                return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId)
             except Exception as e:
                 c = conn.cursor()
                 traceback.print_exc() 
-                c.execute("insert into refData.playerName_errors values (null, '%s', '%s', %s, %s, '%s', %s, current_timestamp())" %
+                c.execute("insert into refData.playerName_errors values (null, '%s', '%s', %s, %s, '%s', %s, '%s', current_timestamp())" %
                           (re.sub(r"(?<!\\)(')","\\'",str(e)), re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName)),
-                           str(espnId), str(statsId), str(depthChartId), str(injuryId)))
+                           str(espnId), str(statsId), str(depthChartId), str(injuryId), str(pfrId)))
                 conn.commit()
                 c.execute("select max(errorId) from refData.playerName_errors")
                 result = c.fetchone()

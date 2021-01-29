@@ -142,7 +142,7 @@ class leaguePredictionTree():
         self._encodeXSet(self.data,fit=True)
         self._encodePlayedModel(self.data,fit=True)
         self.pointsModel = RandomForestRegressor(n_estimators=treeCount,max_features="sqrt")
-        self.playedModel = RandomForestClassifier(n_estimators=treeCount,max_features=None)
+        self.playedModel = RandomForestClassifier(n_estimators=treeCount,max_features="sqrt")
         
         self._buildPlayedModel()
         print('played model built')

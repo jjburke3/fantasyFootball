@@ -112,6 +112,20 @@ create table scrapped_data2.injuries
 	index(injPlayer)
 );
 
+create table scrapped_data2.injuredStatus
+(
+	injSeason smallint,
+	injWeek tinyint,
+	injPlayer int,
+	injPlayerTeam tinyint,
+	injDesignation varchar(10),
+	injDescription varchar(20),
+	injDNP tinyint,
+	primary key (injSeason, injWeek, injPlayer, injPlayerTeam),
+	index(injWeek),
+	index(injPlayer)
+);
+
 -- table for depthchart data
 
 create table scrapped_data2.depthCharts

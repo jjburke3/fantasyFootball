@@ -50,7 +50,8 @@ b.playerTeam,
 b.playerPosition,
 c.predictedWeek - b.predictionWeek as weeksUntil,
 
-b.playerStatus,
+ifnull(case when b.predictionWeek = 0 then playerStatus
+else b.injDesignation end,0) as playerStatus,
 b.chartPosition,
 b.chartRank,
 b.chartRole,
@@ -63,9 +64,10 @@ a.age,
 a.experience,
 sameTeam,
 
-null as priorWeekPlayerStatus,
-null as priorWeekChartPosition,
-null as priorWeekChartRank,
+ifnull(case when b.predictionWeek = 1 then priorWeekPlayerStatus
+else priorWeekInjDesignation end,'') as priorWeekPlayerStatus,
+priorWeekChartPosition,
+priorWeekChartRank,
 
 case when ifnull(seasonGames,0) = 0 then 0
     else seasonPoints/seasonGames end as seasonPoints,

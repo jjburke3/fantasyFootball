@@ -8,8 +8,9 @@ create table refData.playerIds
 	statsId int,
     depthChartsId varchar(10),
     injuryId int,
+	pfrId varchar(15),
     playerName varchar(50),
-    index(espnId), index(depthChartsId), index(injuryId)
+    index(espnId), index(depthChartsId), index(injuryId), index(statsId), index(pfrId)
 );
 
 create table refData.playerNames
@@ -52,5 +53,6 @@ create table refData.playerName_errors
 	statsId int,
 	dcId varchar(15),
 	injuryId int,
+	pfrId varchar(15),
 	error_datetime datetime
 );

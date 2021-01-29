@@ -35,6 +35,7 @@ create table leagueSims.weeklyModelPredictWeekData
 	playerTeam tinyint,
 	playerPosition varchar(10),
 	
+	injDesignation varchar(10),
 	playerStatus varchar(15),
 	chartPosition varchar(7),
 	chartRank tinyint,
@@ -48,6 +49,7 @@ create table leagueSims.weeklyModelPredictWeekData
 	
 	priorWeekBye tinyint,
 	
+	priorWeekInjDesignation varchar(15),
 	priorWeekPlayerStatus varchar(15),
 	priorWeekChartPosition varchar(7),
 	priorWeekChartRank tinyint,
@@ -62,7 +64,8 @@ create table leagueSims.weeklyModelPredictWeekData
 	seasonRushes int,
 	priorWeekRushes tinyint,
 	
-	primary key(predictionSeason, predictionWeek, playerId
+	primary key(predictionSeason, predictionWeek, playerId),
+	index(predictionWeek),
 	index(playerId),
 	index(playerTeam),
 	index(playerPosition),
@@ -83,6 +86,7 @@ create table leagueSims.weeklyModelPredictedWeekData
 	seasonDone tinyint,
 	
 	primary key(predictionSeason,predictedWeek,playerId),
+	index(predictedWeek),
 	index(playerId)
 );
 
@@ -108,6 +112,8 @@ create table leagueSims.weeklyModelPredictedWeekOppTeamData
 	oppFollowWeekBye tinyint,
 	
 	primary key(predictionSeason,predictionWeek,predictedWeek,playerId),
+	index(predictionWeek),
+	index(predictedWeek),
 	index(playerId),
 	index(chartVersion),
 	index(playerTeam),
