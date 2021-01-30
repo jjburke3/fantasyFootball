@@ -14,15 +14,13 @@ from DOConn import connection
 from DOsshTunnel import DOConnect
 from dbFuncs import InsertTable
 
-season = 2019
-week = 12
 runCount = 50
 while True:
     season = random.choice(range(2017,2021))
 
     week = random.choice(range(0,17))
-    season = 2020
-    week = 0
+    #season = 2020
+    #week = 16
     print(season,week)
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
@@ -137,6 +135,7 @@ while True:
                     standLossesArray = concat(standLossesArray,',',values(standLossesArray)),
                     standPoints = standPoints + values(standPoints),
                     standPointsArray = concat(standPointsArray,',',values(standPointsArray)),
+                    standPointsRemain = standPointsRemain + values(standPointsRemain),
                     standPlayoffs = standPlayoffs + values(standPlayoffs),
                     standChamp = standChamp + values(standChamp),
                     standHighPoints = standHighPoints + values(standHighPoints),
@@ -153,11 +152,13 @@ while True:
     sqlAdd = ''
     for i, row in resultsTable.iterrows():
         sqlAdd += ('''(%d,%d,%d,'%s',%d,'%s',%d,'%s',%f,
-                        '%s',%d,%d,%d,%d,%d,%d,%d,%d,%d,'%s'),''' %
+                        '%s',%f, %d,%d,%d,%d,%d,%d,%d,%d,%d,'%s'),''' %
                    (season,week,runCount,
                     row.name,row['winWin'], ','.join([str(int(x)) for x in table2.loc[table2['Names']==i].iloc[0]['Wins']]),
                     row['winLoss'], ','.join([str(int(x)) for x in table2.loc[table2['Names']==i].iloc[0]['Losses']]),
-                    round(row['winPoints'],2),','.join([str(round(x,1)) for x in table2.loc[table2['Names']==i].iloc[0]['Points']]),
+                    round(row['winPoints'],2),
+                    ','.join([str(round(x,1)) for x in table2.loc[table2['Names']==i].iloc[0]['Points']]),
+                    round(row['winPointsRemain'],2),
                     row['playoffs'],row['champ'],row['runnerup'],
                     row['thirdPlace'],row['highPoints'],row['lowPoints'],
                     row['firstPlace'],row['bye'],
@@ -165,6 +166,10 @@ while True:
 
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
-        c.execute(sqlStatement % sqlAdd[:-1])
+        try:
+            c.execute(sqlStatement % sqlAdd[:-1])
+        except:
+            traceback.print_exc()
+            
         conn.commit()
         conn.close()

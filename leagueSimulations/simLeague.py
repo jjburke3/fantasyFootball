@@ -34,11 +34,15 @@ class leagueSimulation(object):
 
     def simSeason(self):
         resultsTable = self.pastResults.copy()
+        resultsTable['winPointsInitial'] = resultsTable['winPoints'].copy()
         resultsTable['winPoints'] = resultsTable.apply(lambda x:
                                                      x['winPoints'] if not self._isNoneNa(x['winPoints'])
                                                      #else random.uniform(100,120),
                                                      else self._bestLineup(x['winTeam'],x['winWeek'],self.predictionValues,self.replacementValues),
                                                      axis=1)
+        resultsTable['winPointsRemain'] = resultsTable.apply(lambda x:
+                                                           x['winPoints'] if self._isNoneNa(x['winPointsInitial']) else 0,
+                                                           axis=1)
         
         resultsTable['winPointsAgs'] = resultsTable.apply(lambda x:
                                                   0 if x['winOpp'] is None else
@@ -76,6 +80,7 @@ class leagueSimulation(object):
         weeklyMaxes = resultsTable[resultsTable.winWeek <= 13].groupby('winWeek')['winPoints'].idxmax()
 
         playerTeams['weeklyHighPoints'] = playerTeams.apply(lambda x: resultsTable.iloc[weeklyMaxes]['winTeam'].to_list().count(x.name),axis=1)
+        playerTeams['winPointsRemain'] = playerTeams.apply(lambda x: resultsTable.loc[resultsTable['winTeam']==x.name,['winPointsRemain']].sum(),axis=1)
         
         playerTeams['playoffs'] = [int(x) for x in playerTeams.index.isin(playoffTeams.index)]
 
