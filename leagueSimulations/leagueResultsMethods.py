@@ -287,6 +287,8 @@ select predictedWeek, 'Flex',
         notInString = '(select distinct playerId from la_liga_data.playerPoints where modelSeason = playerSeason and predictionWeek = playerWeek + 1)'
     else:
         notInString = '(select distinct player from la_liga_data.draftedPlayerData where modelSeason = draftYear)'
+    with conn.cursor() as c:
+        c.execute("SET SESSION group_concat_max_len = 1000000;")
     table = pd.read_sql(sql %(season,week,notInString,season,week,notInString,season,week,notInString),con=conn)
     table['replaceMean'] = table.apply(lambda x: s.mean(map(float,x.replaceMean.split(','))),axis=1)
     return table
