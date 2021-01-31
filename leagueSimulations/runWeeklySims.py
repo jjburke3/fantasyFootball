@@ -86,7 +86,7 @@ while True:
 
     print('start sims')
     start = time.clock()
-    sim = leagueSimulation(rostersDict,replaceDict,results)
+    sim = leagueSimulation(season,rostersDict,replaceDict,results)
     status = True
     fails = 0
     try:

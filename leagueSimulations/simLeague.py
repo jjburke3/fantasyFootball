@@ -7,7 +7,8 @@ from filterPlayer import returnPlayer, returnLineupValues
 
 class leagueSimulation(object):
 
-    def __init__(self, predictionValues, replacementValues, pastResults):
+    def __init__(self, season, predictionValues, replacementValues, pastResults):
+        self.season = season
         self.pastResults = pastResults
         self.predictionValues = predictionValues
         self.replacementValues = replacementValues
@@ -69,9 +70,13 @@ class leagueSimulation(object):
                                                   axis=1)
 
         playerTeams = resultsTable[resultsTable.winWeek <= 13].groupby('winTeam')['winWin','winLoss','winPoints'].sum()
-        playoffTeams = playerTeams.sort_values(by=['winWin','winLoss','winPoints'],ascending=[False,True,False]).iloc[0:5,:]
-        pointsIn = playerTeams[~playerTeams.index.isin(playoffTeams.index)].sort_values(by=['winPoints'],ascending=[False]).iloc[0:1,:]
-        playoffTeams = playoffTeams.append(pointsIn)
+        if self.season > 2017:
+            playoffTeams = playerTeams.sort_values(by=['winWin','winLoss','winPoints'],ascending=[False,True,False]).iloc[0:5,:]
+            pointsIn = playerTeams[~playerTeams.index.isin(playoffTeams.index)].sort_values(by=['winPoints'],ascending=[False]).iloc[0:1,:]
+            playoffTeams = playoffTeams.append(pointsIn)
+        else:
+            playoffTeams = playerTeams.sort_values(by=['winWin','winLoss','winPoints'],ascending=[False,True,False]).iloc[0:6,:]
+        
         playerTeams['highPoints'] = [int(x) for x in playerTeams['winPoints'] == playerTeams['winPoints'].max()]
         playerTeams['lowPoints'] = [int(x) for x in playerTeams['winPoints'] == playerTeams['winPoints'].min()]
         playerTeams['firstPlace'] = [int(x) for x in playerTeams.index == playoffTeams.index[0]]
