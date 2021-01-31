@@ -218,7 +218,11 @@ where a.predictionSeason between %d and %d
 
 def pullCurrentRosters(season, week, conn):
     if week > 1:
-        sql = ''' select playerTeam, a.playerId, a.playerPosition, 
+        sql = ''' select playerTeam, a.playerId,
+                    case a.playerPosition when 'QB' then 0
+                    when 'RB' then 1 when 'WR' then 2
+                    when 'TE' then 3 when 'D/ST' then 4
+                    when 'K' then 5 else 10 end as playerPosition, 
                     predictedWeek, 
                     ifnull(modelPrediction,0) as predictionValue,
                     ifnull(modelPossibleValues,0) as predictionDistr,
@@ -230,7 +234,11 @@ def pullCurrentRosters(season, week, conn):
 
         return pd.read_sql(sql %(season,week),con=conn)
     else:
-        sql = ''' select selectingTeam as playerTeam, player as playerId, a.playerPosition, 
+        sql = ''' select selectingTeam as playerTeam, player as playerId,
+                    case a.playerPosition when 'QB' then 0
+                    when 'RB' then 1 when 'WR' then 2
+                    when 'TE' then 3 when 'D/ST' then 4
+                    when 'K' then 5 else 10 end as playerPosition, 
                     predictedWeek, 
                     ifnull(modelPrediction,0) as predictionValue,
                     ifnull(modelPossibleValues,0) as predictionDistr,
@@ -246,9 +254,9 @@ def pullCurrentRosters(season, week, conn):
 def pullReplacementNumbers(season,week,conn):
     sql = '''select predictedWeek, playerPosition,
             substring_index(group_concat(case when modelPlayProb > .5 then modelPrediction end  order by modelPrediction desc),',',
-				case when playerPosition in ('QB','D/ST','K') then 3 when playerPosition = 'TE' then 4 else 8 end) as replaceMean,
+				case when playerPosition in ('QB','D/ST','K') then 5 when playerPosition = 'TE' then 6 else 10 end) as replaceMean,
             replace(substring_index(group_concat(case when modelPlayProb > .5 then modelPossibleValues end  order by modelPrediction desc separator '|'),'|',
-				case when playerPosition in ('QB','D/ST','K') then 3 when playerPosition = 'TE' then 4 else 8 end),'|',',') as replaceDistr
+				case when playerPosition in ('QB','D/ST','K') then 5 when playerPosition = 'TE' then 6 else 10 end),'|',',') as replaceDistr
             from leagueSims.modelPredictions 
             where modelSeason = %d and predictionWeek = %d
                     and playerId not in %s

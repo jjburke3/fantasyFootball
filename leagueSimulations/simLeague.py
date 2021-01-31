@@ -1,8 +1,7 @@
 import random
 import numpy as np
 import math
-from ctypes import *
-from scipy.stats import skewnorm
+from filterPlayer import returnPlayer, returnLineupValues
 
 
 
@@ -13,15 +12,15 @@ class leagueSimulation(object):
         self.predictionValues = predictionValues
         self.replacementValues = replacementValues
 
-        self.positions = [{'key' : 'QB', 'allow' : ['QB'], 'replace' : 'QB'},
-                     {'key' : 'RB', 'allow' : ['RB'], 'replace' : 'RB'},
-                     {'key' : 'WR', 'allow' : ['WR'], 'replace' : 'WR'},
-                     {'key' : 'TE', 'allow' : ['TE'], 'replace' : 'TE'},
-                     {'key' : 'D/ST', 'allow' : ['D/ST'], 'replace' : 'D/ST'},
-                     {'key' : 'K', 'allow' : ['K'], 'replace' : 'K'},
-                     {'key' : 'RBWR1', 'allow' : ['RB','WR'], 'replace' : 'RBWR'},
-                     {'key' : 'RBWR2', 'allow' : ['RB','WR'], 'replace' : 'RBWR'},
-                     {'key' : 'FLEX', 'allow' : ['RB','WR','TE'], 'replace' : 'Flex'}
+        self.positions = [{'key' : 'QB', 'allow' : [0], 'replace' : 'QB'},
+                     {'key' : 'RB', 'allow' : [1], 'replace' : 'RB'},
+                     {'key' : 'WR', 'allow' : [2], 'replace' : 'WR'},
+                     {'key' : 'TE', 'allow' : [3], 'replace' : 'TE'},
+                     {'key' : 'D/ST', 'allow' : [4], 'replace' : 'D/ST'},
+                     {'key' : 'K', 'allow' : [5], 'replace' : 'K'},
+                     {'key' : 'RBWR1', 'allow' : [1,2], 'replace' : 'RBWR'},
+                     {'key' : 'RBWR2', 'allow' : [1,2], 'replace' : 'RBWR'},
+                     {'key' : 'FLEX', 'allow' : [1,2,3], 'replace' : 'Flex'}
                      ]
 
     def _isNoneNa(self,x):
@@ -157,26 +156,45 @@ class leagueSimulation(object):
 
     def _bestLineup(self, team, week, rosters, replacement):
         weekRoster = rosters[team+"-"+str(int(week))]
+        weekRoster['totalRoster']['randNum'] = np.random.uniform(0,1,size=len(weekRoster['totalRoster'].index))
         self.playersUsed = []
-        replace = replacement[replacement.predictedWeek == week]
-        replaceDict = replace.set_index('playerPosition').to_dict(orient='index')
-        lineup = [self._bestPlayer(pos,weekRoster,replaceDict) for pos in self.positions]
+        lineup = [self._bestPlayer(pos,weekRoster,replacement[week]) for pos in self.positions]
+        #return sum([x['value'] for x in lineup])
         return sum(lineup)
 
     def _bestPlayer(self, pos,roster,replace):
         randMean = replace[pos['replace']]['replaceMean']
-        randDistr = [float(x) if x != '' else 0 for x in replace[pos['replace']]['replaceDistr'].split(',')]
-        posRoster = roster[pos['replace']]
-        randNumbs = [random.uniform(0,1) for x in posRoster.index]
-        avail = posRoster[(posRoster.playProb.gt(randNumbs)) &
-                        (~posRoster.playerId.isin(self.playersUsed)) &
-                        (posRoster.predictionValue >= randMean)
-                          ]
+        randDistr = replace[pos['replace']]['replaceDistr']
+        rosIndex = roster['totalRoster'].apply(lambda x: returnPlayer(x.name,
+                                                                            x['predictionValue'],
+                                                                            x['playProb'],
+                                                                            x['randNum'],
+                                                                            x['playerPosition'],
+                                                                            randMean,
+                                                                            pos['allow'],#dtype=np.int32),
+                                                                            self.playersUsed#dtype=np.int32)
+                                                                                   ),axis=1)
+        avail = roster['totalRoster'][rosIndex]
         if avail.empty:
+            #playerName = 'replace-'+pos['key']
             playerValue = random.choice(randDistr)
         else:
             bestPlayer = avail.loc[avail['predictionValue'].idxmax()]
-            self.playersUsed.append(bestPlayer['playerId'])
-            playerValue = random.choice([float(x) for x in bestPlayer['predictionDistr'].split(',')])
+            #playerName = str(bestPlayer['playerId'])+"-"+pos['key']
+            self.playersUsed.append(bestPlayer.name)
+            playerValue = random.choice([float(x) for x in bestPlayer['predictionDistr']])
+        #return {'player' : playerName, 'value' : playerValue}
         return playerValue
+
+    def _returnPlayer(self, playerId, predictionValue, playProb, randNum, playerPosition, randMean,
+                      allowedPos, usedPlayers):
+        if playerPosition not in allowedPos:
+            return False
+        if predictionValue < randMean:
+            return False
+        if playProb < randNum:
+            return False
+        if playerId in usedPlayers:
+            return False
+        return True
 

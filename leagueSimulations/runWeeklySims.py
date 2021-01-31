@@ -20,7 +20,7 @@ while True:
 
     week = random.choice(range(0,17))
     #season = 2020
-    #week = 16
+    #week = 0
     print(season,week)
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
@@ -44,6 +44,7 @@ while True:
 
         try:
             currentRosters = meth.pullCurrentRosters(season,week, conn)
+            currentRosters['predictionDistr'] = currentRosters.apply(lambda x: x['predictionDistr'].split(',') ,axis=1)
             positions = [{'key' : 'QB', 'allow' : ['QB']},
                          {'key' : 'RB', 'allow' : ['RB']},
                          {'key' : 'WR', 'allow' : ['WR']},
@@ -58,32 +59,34 @@ while True:
             for weekNum in currentRosters['predictedWeek'].dropna().unique():
                 for team in currentRosters['playerTeam'].unique():
                     rostersDict[team+"-"+str(int(weekNum))] = {}
-                    for pos in positions:
-                     rostersDict[team+"-"+str(int(weekNum))][pos['key']] = currentRosters.loc[
+                    rostersDict[team+"-"+str(int(weekNum))]['totalRoster'] = currentRosters.loc[
                         (currentRosters['playerTeam'] == team) &
-                        (currentRosters['predictedWeek'] == weekNum) &
-                        (currentRosters['playerPosition'].isin(pos['allow'])),
+                        (currentRosters['predictedWeek'] == weekNum),
                         ['playerId',
                          'playerPosition',
                          'predictionValue',
                          'predictionDistr',
                          'playProb'
                          ]]
+                    rostersDict[team+"-"+str(int(weekNum))]['totalRoster']['randNum'] = None
         except Exception as e:
-            print(str(e))
+            traceback.print_exc()
 
         try:
             replaceValues = meth.pullReplacementNumbers(season,week,conn)
+            replaceValues['replaceDistr'] = replaceValues.apply(lambda x: [float(y) if y != '' else 0 for y in x['replaceDistr'].split(',')] ,axis=1)
+            replaceDict = {}
+            for replaceWeek in replaceValues['predictedWeek'].unique():
+                replaceDict[replaceWeek] = replaceValues[replaceValues['predictedWeek'] == replaceWeek].set_index('playerPosition').to_dict(orient='index')
         except Exception as e:
             traceback.print_exc() 
 
         conn.close()
 
 
-    #predictions, replacementValues = leagueModel
     print('start sims')
     start = time.clock()
-    sim = leagueSimulation(rostersDict,replaceValues,results)
+    sim = leagueSimulation(rostersDict,replaceDict,results)
     status = True
     fails = 0
     try:
