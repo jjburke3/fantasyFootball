@@ -1,6 +1,6 @@
 import requests
-from espnff import League
-from espnff.exception import AuthorizationError
+from .league import League
+from .exception import AuthorizationError
 
 
 class ESPNFF:
