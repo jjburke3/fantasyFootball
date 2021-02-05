@@ -105,7 +105,7 @@ if (daysSinceWeekFinish == 1 and time == 'Night'):
 
 
 ## pull injury and depth chart data
-if daysToWeekStart <= 50 and time != 'Night' or True:
+if daysToWeekStart <= 50 and time != 'Night':
     print('go')
     if daysToWeekStart > 10 and currentWeek != 21:
         weekUsed = 0
