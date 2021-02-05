@@ -33,7 +33,7 @@ def pullDepthCharts(conn,
     #url = 'https://subscribers.footballguys.com/apps/depthchart.php'
     
     r = requests.get(url)
-    roles = {'brown' : 'Injury Replacement','red' : 'Injury Replacement', 'blue' : 'Starter', 'green': 'Situational', 'black' : 'Practice'}
+    roles = {'brown' : 'Inj Replace','red' : 'Inj Replace', 'blue' : 'Starter', 'green': 'Situational', 'black' : 'Practice'}
 
     soup = bs(r.content, 'html.parser')
     tables = soup.find_all('td', {"class":"la","width" : "50%"})

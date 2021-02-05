@@ -35,6 +35,7 @@ elif now.hour < 22 and now.hour >= 17:
     time = 'Evening'
 else:
     time = 'Night'
+    
 if ((now.month in (8,9,10,11,12,1) and time == 'Morning') or
         (now.day == 1 and time == 'Morning')):
 ## pull the nfl schedule on every day in season, and the 1st of month out of season
@@ -104,7 +105,8 @@ if (daysSinceWeekFinish == 1 and time == 'Night'):
 
 
 ## pull injury and depth chart data
-if daysToWeekStart <= 50 and time != 'Night':
+if daysToWeekStart <= 50 and time != 'Night' or True:
+    print('go')
     if daysToWeekStart > 10 and currentWeek != 21:
         weekUsed = 0
     else:
@@ -117,7 +119,7 @@ if daysToWeekStart <= 50 and time != 'Night':
                 c.execute(statement)
             conn.commit()
         except Exception as e:
-            traceback.print_exc() 
+            traceback.print_exc()
         try:
             c.execute('''select max(chartVersion) as version
                      from scrapped_data2.depthCharts''')
