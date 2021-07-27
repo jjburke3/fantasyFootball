@@ -33,7 +33,11 @@ def pullLeagueSchedule(conn, year):
               'November' : 11,
               'December' : 12}
 
-    weeks = {'WildCard' : 18,
+    weeks = {'Pre0' : -4,
+             'Pre1' : -3,
+             'Pre2' : -2,
+             'Pre3' : -1,
+             'WildCard' : 18,
              'Division' : 19,
              'ConfChamp' : 20,
              'SuperBowl' : 21}
