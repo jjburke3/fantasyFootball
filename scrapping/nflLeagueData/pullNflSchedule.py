@@ -2,6 +2,7 @@ import requests
 import traceback
 from bs4 import BeautifulSoup as bs
 import sys
+import re
 sys.path.insert(0,'..')
 sys.path.insert(0,'..\..')
 sys.path.insert(0,'../../dbConn')
@@ -48,6 +49,7 @@ def pullLeagueSchedule(conn, year):
     soup = bs(r.content,'html.parser')
 
     table = soup.find('div',{"id":"all_games"}).find('table',{'id':'games'})
+    print(table)
     gameNum = 0
     rows = table.find_all('tr')
     priorWeek = None
@@ -60,27 +62,45 @@ def pullLeagueSchedule(conn, year):
                 gameNum = 0
                 
             day = row.find('td',{'data-stat':'game_day_of_week'}).text
-            date = row.find('td',{'data-stat':'game_date'}).text
+            try:
+                date = row.find('td',{'data-stat':'game_date'}).text
+            except:
+                
+                date = row.find('td',{'data-stat':'boxscore_word'}).text
+                #dateWordTD = row.find('td',{'data-stat':'boxscore_word'})
+                #dateWord = dateWordTD.find('a')['href']
+                #dateText = re.search('(?<=\/boxscores\/)(\w){8}', dateWord).group(0)
+                #date = dateText[:4] + "-" + dateText[4:6] + "-" + dateText[6:]
             time = row.find('td',{'data-stat':'gametime'}).text
             location = row.find('td',{'data-stat':'game_location'}).text
-            if location == '@':
-                homeTeam = row.find('td',{'data-stat':'loser'}).text
-                roadTeam = row.find('td',{'data-stat':'winner'}).text
-                homePoints = row.find('td',{'data-stat':'pts_lose'}).text
-                roadPoints = row.find('td',{'data-stat':'pts_win'}).text
-                homeYards = row.find('td',{'data-stat':'yards_lose'}).text
-                roadYards = row.find('td',{'data-stat':'yards_win'}).text
-                homeTO = row.find('td',{'data-stat':'to_lose'}).text
-                roadTO = row.find('td',{'data-stat':'to_win'}).text
-            else:
-                homeTeam = row.find('td',{'data-stat':'winner'}).text
-                roadTeam = row.find('td',{'data-stat':'loser'}).text
-                homePoints = row.find('td',{'data-stat':'pts_win'}).text
-                roadPoints = row.find('td',{'data-stat':'pts_lose'}).text
-                homeYards = row.find('td',{'data-stat':'yards_win'}).text
-                roadYards = row.find('td',{'data-stat':'yards_lose'}).text
-                homeTO = row.find('td',{'data-stat':'to_win'}).text
-                roadTO = row.find('td',{'data-stat':'to_lose'}).text
+            try:
+                if location == '@':
+                    homeTeam = row.find('td',{'data-stat':'loser'}).text
+                    roadTeam = row.find('td',{'data-stat':'winner'}).text
+                    homePoints = row.find('td',{'data-stat':'pts_lose'}).text
+                    roadPoints = row.find('td',{'data-stat':'pts_win'}).text
+                    homeYards = row.find('td',{'data-stat':'yards_lose'}).text
+                    roadYards = row.find('td',{'data-stat':'yards_win'}).text
+                    homeTO = row.find('td',{'data-stat':'to_lose'}).text
+                    roadTO = row.find('td',{'data-stat':'to_win'}).text
+                else:
+                    homeTeam = row.find('td',{'data-stat':'winner'}).text
+                    roadTeam = row.find('td',{'data-stat':'loser'}).text
+                    homePoints = row.find('td',{'data-stat':'pts_win'}).text
+                    roadPoints = row.find('td',{'data-stat':'pts_lose'}).text
+                    homeYards = row.find('td',{'data-stat':'yards_win'}).text
+                    roadYards = row.find('td',{'data-stat':'yards_lose'}).text
+                    homeTO = row.find('td',{'data-stat':'to_win'}).text
+                    roadTO = row.find('td',{'data-stat':'to_lose'}).text
+            except:
+                homeTeam = row.find('td',{'data-stat':'home_team'}).text
+                roadTeam = row.find('td',{'data-stat':'visitor_team'}).text
+                homePoints = ''
+                roadPoints = ''
+                homeYards = ''
+                roadYards = ''
+                homeTO = ''
+                roadTO = ''
 
 
             if week not in ('Week',''):
@@ -88,18 +108,19 @@ def pullLeagueSchedule(conn, year):
                     date = (str(year+1) + "-" +
                             str(months[date.split(' ')[0]]).zfill(2) + "-" +
                             str(date.split(' ')[1]).zfill(2))
-                else:
+                elif date[:3] in ('Apr','May','Jun','Jul','Aug','Sep',
+                                  'Oct','Nov','Dec'):
                     date = (str(year) + "-" +
                             str(months[date.split(' ')[0]]).zfill(2) + "-" +
                             str(date.split(' ')[1]).zfill(2))
 
                 if (time[-2:] == 'PM') & (time[:2] != '12'):
-                    time = (str(int(time.split(':')[0])+12).zfill(2) + ":" +
-                            str(time.split(':')[1][:-2]).zfill(2) + ":" +
+                    time = (str(int(time.split(':')[0].strip())+12).zfill(2) + ":" +
+                            str(time.split(':')[1][:-2].strip()).zfill(2) + ":" +
                                 "00")
                 else:
-                    time = (str(int(time.split(':')[0])).zfill(2) + ":" +
-                            str(time.split(':')[1][:-2]).zfill(2) + ":" +
+                    time = (str(int(time.split(':')[0].strip())).zfill(2) + ":" +
+                            str(time.split(':')[1][:-2].strip()).zfill(2) + ":" +
                                 "00")
 
                 if week in weeks:

@@ -20,7 +20,7 @@ def remove_non_ascii(text):
 def pullDepthCharts(conn,
                     season, week, day, time,
                     versionNo = 'NULL',
-                    url = 'https://subscribers.footballguys.com/apps/depthchart.php',
+                    url = 'https://subscribers.footballguys.com/apps/depthchart.php?type=all',
                     timestamp = 'NULL'):
     teams = getTeamId(conn)
     players = getPlayerId(season,conn,depthChart=True)
@@ -36,100 +36,109 @@ def pullDepthCharts(conn,
     roles = {'brown' : 'Inj Replace','red' : 'Inj Replace', 'blue' : 'Starter', 'green': 'Situational', 'black' : 'Practice'}
 
     soup = bs(r.content, 'html.parser')
-    tables = soup.find_all('td', {"class":"la","width" : "50%"})
+    ## pull all depth charts divs
+    tables = soup.find_all('div', {"class":"depth-chart"})
 
     paren = re.compile(" \((.+)\)")
     
-    for column in tables:
-        teamRows = column.find_all("tr")
-        teamName = ''
-        for i, team in enumerate(teamRows):
-            if i % 2 == 0:
-                teamName = team.find("b").text
-            else:
-                children = team.find("td").findChildren()
-                position = ''
-                posRank = 0
+    for teamDiv in tables:
+        teamName = teamDiv.find('span',{"class":"team-header"}).text
+        positionList = teamDiv.find_all('li')
+        for positionItem in positionList:
+            position = positionItem.find('span',{'class':'pos-label'}).text
+            position = position.split(':')[0]
+            posRank = 0
+            for playerEntry in positionItem.findChildren()[1:]:
+                player = playerEntry.text
                 dcId = ''
+                if playerEntry.name=="a":
+                    try:
+                        dcId = playerEntry['href'].split("id=")[1]
+                    except:
+                        dcId = ''
+                injuryStatus = ''
+                tdb = 0
+                gl = 0
+                kr = 0
+                pr = 0
+                extra = paren.search(player)
+                if extra:
+                    extra = extra.group(1)
+                    player = paren.sub('',player)
+                else:
+                    extra = ''
+                if position == "Coaches":
+                    role = extra
+                else:
+                    role = 'Practice'
+                    if re.match('starter',str(playerEntry['class'])):
+                        role = 'Starter'
+                    
+                    if re.match("IR",extra):
+                        injuryStatus = 'IR'
+                    if re.match("IR-R",extra):
+                        injuryStatus = 'IR-R'
+                    elif re.match('Q',extra):
+                        injuryStatus = 'Q'
+                    elif re.match('D',extra):
+                        injuryStatus = 'D'
+                    elif re.match('O',extra):
+                        injuryStatus = 'O'
+                    elif re.match('COV',extra):
+                        injuryStatus = 'COV'
+                    elif re.match('SUS',extra):
+                        injuryStatus = 'Suspended'
+                    elif re.match('NFI',extra):
+                        injuryStatus = 'NFI'
+                    elif re.match('PUP',extra):
+                        injuryStatus = 'PUP'
+                    elif re.match('CEL',extra):
+                        injuryStatus = 'CEL'
+                    elif re.match('EX',extra):
+                        injuryStatus = 'EX'
+                    if re.match("3RB",extra):
+                        tdb = 1
+                    if re.match("SD",extra):
+                        gl = 1
+                    if re.match("KR",extra):
+                        kr = 1
+                    if re.match("PR",extra):
+                        pr = 1
+                teamId = teams.teamId(teamName,conn)
                 
-                for child in children:
-                    if child.name == "b":
-                        position = child.text[:-1]
-                        posRank = 0
-                    elif child.name == "font" or (position=="Coaches" and child.name=="a"):
-                        player = child.text
-                        if len(player) > 65:
-                            player = player[:65]
-                        if child.name == "font" and child.parent.name=="a":
-                            dcId = child.parent['href'].split("id=")[1]
-                        else:
-                            dcId = ''
-                        injuryStatus = ''
-                        tdb = 0
-                        gl = 0
-                        kr = 0
-                        pr = 0
-                        if position =="Coaches":
-                            role = re.sub(': ','',re.sub(', ','',child.previousSibling))
-                        elif child.name == "font":
-                            extra = paren.search(player)
-                            if extra:
-                                extra = extra.group(1)
-                                player = paren.sub('',player)
-                            else:
-                                extra = ''
-                            try:
-                                role = roles[child['color']]
-                            except:
-                                role = "None"
-                            if re.match("IR",extra):
-                                injuryStatus = 'IR'
-                            elif re.match('inj',extra):
-                                injuryStatus = 'Injured'
-                            elif re.match('susp',extra):
-                                injuryStatus = 'Suspended'
-                            elif re.match('res',extra):
-                                injuryStatus = 'Reserve'
-                            elif re.match('PUP',extra):
-                                injuryStatus = 'PUP'
-                            if re.match("3RB",extra):
-                                tdb = 1
-                            if re.match("SD",extra):
-                                gl = 1
-                            if re.match("KR",extra):
-                                kr = 1
-                            if re.match("PR",extra):
-                                pr = 1
-                        teamId = teams.teamId(teamName,conn)
-                        playerId = players.playerId([
-                            remove_non_ascii(player).replace("'","\\'"),
-                            str(teamId),
-                            position,
-                            str(season)],
-                            conn,
-                            depthChartId = dcId
-                            )
-                        sql.appendRow([
-                            ['NULL',''],
-                            [str(versionNo),''],
-                            [str(season),''],
-                            [str(week),''],
-                            [str(day),'string'],
-                            [str(time),'string'],
-                            [teamId,''],##teamId,
-                            [position,'string'],
-                            [str(posRank),''],
-                            [playerId,''],##player
-                            [dcId,'string'],##depth chart site player id
-                            [role,'string'],
-                            [injuryStatus,'string'],
-                            [str(tdb),''],
-                            [str(gl),''],
-                            [str(kr),''],
-                            [str(pr),''],
-                            [str(timestamp),'']
-                            ])
-                        posRank += 1
+                if len(player) > 65:
+                    player = player[:65]
+            
+
+                playerId = players.playerId([
+                    remove_non_ascii(player).replace("'","\\'"),
+                    str(teamId),
+                    position,
+                    str(season)],
+                    conn,
+                    depthChartId = dcId
+                    )
+                sql.appendRow([
+                    ['NULL',''],
+                    [str(versionNo),''],
+                    [str(season),''],
+                    [str(week),''],
+                    [str(day),'string'],
+                    [str(time),'string'],
+                    [teamId,''],##teamId,
+                    [position,'string'],
+                    [str(posRank),''],
+                    [playerId,''],##player
+                    [dcId,'string'],##depth chart site player id
+                    [role,'string'],
+                    [injuryStatus,'string'],
+                    [str(tdb),''],
+                    [str(gl),''],
+                    [str(kr),''],
+                    [str(pr),''],
+                    [str(timestamp),'']
+                    ])
+                posRank += 1
 
     return [deleteSql,sql.returnStatement()]
 
