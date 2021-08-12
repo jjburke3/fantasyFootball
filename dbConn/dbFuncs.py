@@ -96,13 +96,18 @@ class getTeamId(object):
 class getPlayerId:
     def __init__(self, year, conn, espn=False, depthChart=False,
                  injury=False,stats=False,pfr=False):
-        self.playerDict = pd.read_sql('''select lower(playerString) as playerString, b.playerId,
-                                        espnId, statsId, depthChartsId,injuryId, pfrId
+        self.playerDict = pd.read_sql('''select lower(playerString) as playerString, max(b.playerId) as playerId,
+                                        substring_index(group_concat(espnId),',',1) as espnId,
+                                        substring_index(group_concat(statsId),',',1) as statsId,
+                                        substring_index(group_concat(depthChartsId),',',1) as depthChartsId,
+                                        substring_index(group_concat(injuryId),',',1) as injuryId,
+                                       substring_index(group_concat( pfrId),',',1) as pfrId
 
                                       from refData.playerNames b
                                       join refData.playerIds a on a.playerId = b.playerId
 
-                                      where playerYear = %d''' % year,
+                                      where playerYear = %d
+                                      group by 1''' % year,
                                      con=conn,index_col='playerString').to_dict('index')
 
         self.espnDict = {}
@@ -144,7 +149,7 @@ class getPlayerId:
 
     def _addPlayer(self, playerName,conn,espnId = 'NULL', depthChartId = 'NULL',
                    injuryId = 'NULL', statsId = 'NULL', pfrId = 'NULL'):
-        removeString = ['\.',"'","_",' Jr$',' JR$',' Sr$',' SR$',' III$',' II$',' IV$',' V$',' VI$']
+        removeString = [r'\\',r'\.',"'","_",' Jr$',' JR$',' Sr$',' SR$',' III$',' II$',' IV$',' V$',' VI$']
         
         playerApprox = playerName[0]
         if playerName[2] in ['HB','FB']:
@@ -165,7 +170,7 @@ class getPlayerId:
             
         for s in removeString:
             playerApprox = re.sub(s,'',playerApprox)
-        anyID = False
+        anyId = False
         idCheck = 'join refData.playerIds b on b.playerId = a.playerId'
         idUpdate = "update refData.playerIds set "
         if espnId != 'NULL':
@@ -240,7 +245,7 @@ class getPlayerId:
                         where a.playerName = '%s'
                         and playerPosition in ('%s','%s')
                         and playerYear = %s''' %
-                      (idCheck, playerName[0], 
+                      (idCheck, re.sub(r"(?<!\\)(')","\\'",playerName[0]), 
                        positionMatch,playerName[2], str(playerName[3])))
             result = c.fetchone()
             if result != None:
@@ -316,7 +321,6 @@ class getPlayerId:
             return playerId
         except Exception as e:
             traceback.print_exc()
-            print(re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName)))
             c.execute("insert into refData.playerName_errors values (null, '%s', '%s', %s, %s, '%s',%s, '%s', current_timestamp())" %
                       (re.sub(r"(?<!\\)(')","\\'",str(e)), re.sub(r"(?<!\\)(')","\\'",'-'.join(playerName)),
                            str(espnId), str(statsId), str(depthChartId), str(injuryId), str(pfrId)))

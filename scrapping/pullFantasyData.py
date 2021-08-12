@@ -35,6 +35,10 @@ elif now.hour < 22 and now.hour >= 17:
     time = 'Evening'
 else:
     time = 'Night'
+time = 'Morning'
+print(time)
+print(now.month)
+print(now.day)
     
 if ((now.month in (8,9,10,11,12,1) and time == 'Morning') or
         (now.day == 1 and time == 'Morning')):
@@ -113,13 +117,13 @@ if daysToWeekStart <= 50 and time != 'Night':
         weekUsed = currentWeek
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
-        try:
-            sql = pullInjuries(conn,year,weekUsed,day,time)
-            for statement in sql:
-                c.execute(statement)
-            conn.commit()
-        except Exception as e:
-            traceback.print_exc()
+        #try:
+            #sql = pullInjuries(conn,year,weekUsed,day,time)
+            #for statement in sql:
+                #c.execute(statement)
+            #conn.commit()
+        #except Exception as e:
+            #traceback.print_exc()
         try:
             c.execute('''select max(chartVersion) as version
                      from scrapped_data2.depthCharts''')

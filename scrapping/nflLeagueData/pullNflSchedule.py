@@ -49,7 +49,7 @@ def pullLeagueSchedule(conn, year):
     soup = bs(r.content,'html.parser')
 
     table = soup.find('div',{"id":"all_games"}).find('table',{'id':'games'})
-    print(table)
+
     gameNum = 0
     rows = table.find_all('tr')
     priorWeek = None

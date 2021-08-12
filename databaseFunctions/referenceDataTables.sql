@@ -9,6 +9,7 @@ create table refData.playerIds
     depthChartsId varchar(10),
     injuryId int,
 	pfrId varchar(15),
+	nbcId int,
     playerName varchar(50),
     index(espnId), index(depthChartsId), index(injuryId), index(statsId), index(pfrId)
 );
