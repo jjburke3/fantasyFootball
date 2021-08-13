@@ -117,13 +117,13 @@ if daysToWeekStart <= 50 and time != 'Night':
         weekUsed = currentWeek
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
-        #try:
-            #sql = pullInjuries(conn,year,weekUsed,day,time)
-            #for statement in sql:
-                #c.execute(statement)
-            #conn.commit()
-        #except Exception as e:
-            #traceback.print_exc()
+        try:
+            sql = pullInjuries(conn,year,weekUsed,day,time)
+            for statement in sql:
+                c.execute(statement)
+            conn.commit()
+        except Exception as e:
+            traceback.print_exc()
         try:
             c.execute('''select max(chartVersion) as version
                      from scrapped_data2.depthCharts''')
