@@ -97,11 +97,11 @@ class getPlayerId:
     def __init__(self, year, conn, espn=False, depthChart=False,
                  injury=False,stats=False,pfr=False,nbc=False):
         self.playerDict = pd.read_sql('''select lower(playerString) as playerString, max(b.playerId) as playerId,
-                                        substring_index(group_concat(espnId),',',1) as espnId,
-                                        substring_index(group_concat(statsId),',',1) as statsId,
+                                        cast(substring_index(group_concat(espnId),',',1) as SIGNED) as espnId,
+                                        cast(substring_index(group_concat(statsId),',',1) as SIGNED) as statsId,
                                         substring_index(group_concat(depthChartsId),',',1) as depthChartsId,
-                                        substring_index(group_concat(injuryId),',',1) as injuryId,
-                                        substring_index(group_concat(nbcId),',',1) as nbcId,
+                                        cast(substring_index(group_concat(injuryId),',',1) as SIGNED) as injuryId,
+                                        cast(substring_index(group_concat(nbcId),',',1) as SIGNED) as nbcId,
                                        substring_index(group_concat( pfrId),',',1) as pfrId
 
                                       from refData.playerNames b
@@ -360,8 +360,8 @@ class getPlayerId:
             return self.pfrDict[pfrId]['playerId']
         elif nbcId in self.nbcDict:
             return self.nbcDict[nbcId]['playerId']
-        elif '-'.join(playerName).lower() in self.playerDict:
-            playerEntry = self.playerDict['-'.join(playerName).lower()]
+        elif re.sub(r"\\\'","\'",'-'.join(playerName).lower()) in self.playerDict:
+            playerEntry = self.playerDict[re.sub(r"\\\'","\'",'-'.join(playerName).lower())]
             c = conn.cursor()
             if statsId != 'NULL':
                 if playerEntry['statsId'] is None or math.isnan(playerEntry['statsId']):
@@ -369,37 +369,37 @@ class getPlayerId:
                     conn.commit()
                     return playerEntry['playerId']
                 else:
-                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId)
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId, nbcId)
             elif espnId != 'NULL':
                 if playerEntry['espnId'] is None or math.isnan(playerEntry['espnId']):
                     c.execute("update refData.playerIds set espnId = %d where playerId = %d" % (espnId,playerEntry['playerId']))
                     conn.commit()
                     return playerEntry['playerId']
                 else:
-                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId)
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId, nbcId)
             elif depthChartId != 'NULL':
                 if playerEntry['depthChartsId'] is None:
                     c.execute("update refData.playerIds set depthChartsId = '%s' where playerId = %d" % (depthChartId,playerEntry['playerId']))
                     conn.commit()
                     return playerEntry['playerId']
                 else:
-                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId)
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId, nbcId)
             elif injuryId != 'NULL':
                 if playerEntry['injuryId'] is None or math.isnan(playerEntry['injuryId']):
                     c.execute("update refData.playerIds set injuryId = %d where playerId = %d" % (injuryId,playerEntry['playerId']))
                     conn.commit()
                     return playerEntry['playerId']
                 else:
-                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId)
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId, nbcId)
             elif pfrId != 'NULL':
                 if playerEntry['pfrId'] is None:
                     c.execute("update refData.playerIds set pfrId = '%s' where playerId = %d" % (pfrId,playerEntry['playerId']))
                     conn.commit()
                     return playerEntry['playerId']
                 else:
-                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId)
+                    return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId, nbcId)
             elif nbcId != 'NULL':
-                if playerEntry['nbcId'] is None:
+                if playerEntry['nbcId'] is None or math.isnan(playerEntry['nbcId']):
                     c.execute("update refData.playerIds set nbcId = %s where playerId = %d" % (nbcId,playerEntry['playerId']))
                     conn.commit()
                     return playerEntry['playerId']

@@ -189,9 +189,10 @@ def nbcChartAttr(conn,
         teamName = data['team']['label']
         teamId = teams.teamId(teamName,conn)
         for position in data['categories'][0]['slots']:
-            if position['position']['label'] in ['Goal-line Back','Third-down Running Back']:
+            if (position['position']['label'] in ['Goal-line Back','Third-down Running Back'] and
+                len(position['players']) > 0):
                 player = position['players'][0]['label']
-                nId = position['players'][0]['id']
+                nId = int(position['players'][0]['id'])
                 playerId = players.playerId([
                     remove_non_ascii(player).replace("'","\\'"),
                     str(teamId),
