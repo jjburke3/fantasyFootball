@@ -13,7 +13,7 @@ import traceback
 
 from DOConn import connection
 from DOsshTunnel import DOConnect
-from depthCharts import pullDepthCharts
+from depthCharts import pullDepthCharts, nbcChartAttr
 from injuries import pullInjuries
 from mysportsfeeds import returnWeekStats
 from pullNflSchedule import pullLeagueSchedule
@@ -35,7 +35,6 @@ elif now.hour < 22 and now.hour >= 17:
     time = 'Evening'
 else:
     time = 'Night'
-time = 'Morning'
 print(time)
 print(now.month)
 print(now.day)
@@ -129,6 +128,9 @@ if daysToWeekStart <= 50 and time != 'Night':
                      from scrapped_data2.depthCharts''')
             versionNo = (c.fetchone()[0]) + 1
             sql = pullDepthCharts(conn,year,weekUsed,day,time,versionNo)
+            for statement in sql:
+                c.execute(statement)
+            sql = nbcChartAttr(conn,year,versionNo)
             for statement in sql:
                 c.execute(statement)
             conn.commit()
