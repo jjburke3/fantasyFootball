@@ -35,7 +35,6 @@ elif now.hour < 22 and now.hour >= 17:
     time = 'Evening'
 else:
     time = 'Night'
-time = 'Afternoon'
 print(time)
 print(now.month)
 print(now.day)
