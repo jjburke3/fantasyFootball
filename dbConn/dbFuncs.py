@@ -120,38 +120,38 @@ class getPlayerId:
         if espn:
             self.espnDict = pd.read_sql('''select espnId, substring_index(group_concat(playerId),',',1) as playerId
                                             from refData.playerIds
-                                            where espnId is not null
+                                            where espnId is not null and espnId != ''
                                             group by 1 having count(*) = 1''',
                                        con=conn,index_col='espnId').to_dict('index')
 
         if depthChart:
             self.depthDict = pd.read_sql('''select depthChartsId, substring_index(group_concat(playerId),',',1) as playerId
                                             from refData.playerIds
-                                         where depthChartsId is not null
+                                         where depthChartsId is not null and depthChartsId != ''
                                         group by 1 having count(*) = 1''',
                                        con=conn,index_col='depthChartsId').to_dict('index')
         if injury:
             self.injuryDict = pd.read_sql('''select injuryId, substring_index(group_concat(playerId),',',1) as playerId
                                             from refData.playerIds
-                                          where injuryId is not null
+                                          where injuryId is not null and injuryId != ''
                                             group by 1 having count(*) = 1''',
                                        con=conn,index_col='injuryId').to_dict('index')
         if stats:
             self.statsDict = pd.read_sql('''select statsId, substring_index(group_concat(playerId),',',1) as playerId
                                             from refData.playerIds
-                                         where statsId is not null
+                                         where statsId is not null and statsId != ''
                                             group by 1 having count(*) = 1''',
                                        con=conn,index_col='statsId').to_dict('index')
         if pfr:
             self.pfrDict = pd.read_sql('''select pfrId, substring_index(group_concat(playerId),',',1) as playerId
                                             from refData.playerIds
-                                         where pfrId is not null
+                                         where pfrId is not null and pfrId != ''
                                             group by 1 having count(*) = 1''',
                                        con=conn,index_col='pfrId').to_dict('index')
         if nbc:
             self.nbcDict = pd.read_sql('''select nbcId, substring_index(group_concat(playerId),',',1) as playerId
                                             from refData.playerIds
-                                         where nbcId is not null
+                                         where nbcId is not null and nbcId != ''
                                             group by 1 having count(*) = 1''',
                                        con=conn,index_col='nbcId').to_dict('index')
 
