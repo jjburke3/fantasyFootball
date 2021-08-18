@@ -70,8 +70,8 @@ def pullDepthCharts(conn,
                 if position == "Coaches":
                     role = extra
                 else:
-                    role = 'Practice'
-                    if re.match('starter',str(playerEntry['class'])):
+                    role = 'Non-starter'
+                    if 'starter' in playerEntry['class']:
                         role = 'Starter'
                     
                     if re.match("IR",extra):
