@@ -181,29 +181,29 @@ class getPlayerId:
         anyId = False
         idCheck = 'join refData.playerIds b on b.playerId = a.playerId'
         idUpdate = "update refData.playerIds set "
-        if espnId != 'NULL':
+        if espnId != 'NULL' and espnId != '':
             anyId = True
-            idCheck += " and espnId is null"
+            idCheck += " and (espnId is null or espnId = '')"
             idUpdate += " espnId = %s " % str(espnId)
-        if depthChartId != 'NULL':
+        if depthChartId != 'NULL' and depthChartId != '':
             anyId = True
-            idCheck += " and depthChartsId is null"
+            idCheck += " and (depthChartsId is null or depthChartsId = '')"
             idUpdate += " depthChartsId = '%s' " % str(depthChartId)
-        if injuryId != 'NULL':
+        if injuryId != 'NULL' and injuryId != '':
             anyId = True
-            idCheck += " and injuryId is null"
+            idCheck += " and (injuryId is null or injuryId = '')"
             idUpdate += " injuryId = %s " % str(injuryId)
-        if statsId != "NULL":
+        if statsId != "NULL" and statsId != '':
             anyId = True
-            idCheck += " and statsId is null"
+            idCheck += " and (statsId is null or statsId = '')"
             idUpdate += " statsId = %s " % str(statsId)
-        if pfrId != "NULL":
+        if pfrId != "NULL" and pfrId != '':
             anyId = True
-            idCheck += " and pfrId is null"
+            idCheck += " and (pfrId is null or pfrid = '')"
             idUpdate += " pfrId = '%s' " % str(pfrId)
-        if nbcId != "NULL":
+        if nbcId != "NULL" and nbcId != '':
             anyId = True
-            idCheck += " and nbcId is null"
+            idCheck += " and (nbcId is null or nbcId = '')"
             idUpdate += " nbcId = %s " % str(pfrId)
 
         idUpdate += " where playerId = %d"
