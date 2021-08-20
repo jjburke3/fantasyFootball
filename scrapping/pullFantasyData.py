@@ -4,6 +4,7 @@ sys.path.insert(0,'..')
 sys.path.insert(0,'../dbConn')
 sys.path.insert(0,'./espnLeagueData')
 sys.path.insert(0,'./nflLeagueData')
+sys.path.insert(0,'./rankingsData')
 from datetime import date, datetime, timedelta
 import calendar
 import pandas as pd
@@ -14,6 +15,7 @@ import traceback
 from DOConn import connection
 from DOsshTunnel import DOConnect
 from depthCharts import pullDepthCharts, nbcChartAttr
+from pullRankings import pullRankings
 from injuries import pullInjuries
 from mysportsfeeds import returnWeekStats
 from pullNflSchedule import pullLeagueSchedule
@@ -108,7 +110,7 @@ if (daysSinceWeekFinish == 1 and time == 'Night'):
 
 
 ## pull injury and depth chart data
-if daysToWeekStart <= 50 and time != 'Night':
+if daysToWeekStart <= 50: and time != 'Night':
     print('go')
     if daysToWeekStart > 10 and currentWeek != 21:
         weekUsed = 0
@@ -134,6 +136,12 @@ if daysToWeekStart <= 50 and time != 'Night':
             for statement in sql:
                 c.execute(statement)
             conn.commit()
+            
+            try:
+                sql = pullFPRankings(conn,year,weekUsed,day,time,versionNo)
+                for statement in sql:
+                    c.execute(statement)
+                conn.commit()
         except Exception as e:
             traceback.print_exc() 
         conn.close()
