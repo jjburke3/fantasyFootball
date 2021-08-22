@@ -47,6 +47,8 @@ def pullDepthCharts(conn,
         for positionItem in positionList:
             position = positionItem.find('span',{'class':'pos-label'}).text
             position = position.split(':')[0]
+            if position in ['PR','KR','H']:
+                continue
             posRank = 0
             for playerEntry in positionItem.findChildren()[1:]:
                 player = playerEntry.text

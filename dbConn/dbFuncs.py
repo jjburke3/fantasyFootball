@@ -176,12 +176,16 @@ class getPlayerId:
             positionMatch = 'S'
         elif playerName[2] in ['DST','Defense']:
             positionMatch = 'D/ST'
-        elif playerName[2] in ['NT']:
+        elif playerName[2] in ['NT','RDT','LDT']:
             positionMatch = 'DT'
-        elif playerName[2] in ['RE','LE']:
+        elif playerName[2] in ['RE','LE','RDE','LDE']:
             positionMatch = 'DE'
-        elif playerName[2] in ['OLB','MLB','ROLB','LOLB']:
+        elif playerName[2] in ['OLB','MLB','ROLB','LOLB','SLB','WLB','LILB','RILB']:
             positionMatch = 'LB'
+        elif playerName[2] in ['RCB','LCB']:
+            positionMatch = 'CB'
+        elif playerName[2] in ['PK']:
+            positionMatch = 'K'
         else:
             positionMatch = playerName[2]
 
