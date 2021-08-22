@@ -105,7 +105,6 @@ def pullDepthCharts(conn,
                     if re.match("PR",extra):
                         pr = 1
                 teamId = teams.teamId(teamName,conn)
-                
                 if len(player) > 65:
                     player = player[:65]
             
