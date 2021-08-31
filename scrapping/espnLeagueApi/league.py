@@ -268,6 +268,49 @@ class League(object):
 
         return result
 
+    def matchup(self,week,team):
+        params = {
+            'view':'mBoxscore',
+            'leagueId': self.league_id,
+            'seasonId': self.year,
+            'scoringPeriodId': week,
+            'matchupPeriodId': week,
+            'forTeamId' : team
+        }
+        r = requests.get(self.ENDPOINT % (self.year, self.league_id), cookies=self.cookies, params = params)
+        data = r.json()
+        if self.status == 401:
+            raise PrivateLeagueException(data['error'][0]['message'])
+
+        elif self.status == 404:
+            raise InvalidLeagueException(data['error'][0]['message'])
+
+        elif self.status != 200:
+            raise UnknownLeagueException('Unknown %s Error' % self.status)
+
+        boxscoreData = data['schedule']
+        def checkAwayKey(obj):
+            if 'away' in list(obj.keys()):
+                return obj['away']['teamId']
+            else:
+                return 99
+        boxscoreData = list(filter(lambda d: (d['matchupPeriodId'] == week and
+                                     (d['home']['teamId'] == team or
+                                      checkAwayKey(d) == team
+                                      )), boxscoreData))
+
+        if boxscoreData[0]['home']['teamId'] == team:
+            d = 'home'
+            e = 'away'
+        else:
+            d = 'away'
+            e = 'home'
+        teamData = boxscoreData[0][d]
+        if checkAwayKey(boxscoreData[0]) == 99:
+            return 99
+        else:
+            return boxscoreData[0][e]['teamId']
+
 
     def freeAgents(self, week=None):
 

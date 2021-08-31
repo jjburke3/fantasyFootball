@@ -38,52 +38,32 @@ def pullSchedule(season, conn):
     sql = ''' '''
 
 
-def pullModelData(season,week,position, conn):
+def pullModelData(season,position, conn):
     sql = ''' select null as id,
 a.predictionSeason,
-b.predictionWeek,
-c.predictedWeek,
-b.chartVersion,
+a.chartVersion,
 a.playerId,
 a.playerName,
-b.playerTeam,
-b.playerPosition,
-c.predictedWeek - b.predictionWeek as weeksUntil,
+a.playerTeam,
+a.playerPosition,
 
-ifnull(case when b.predictionWeek = 0 then playerStatus
-else b.injDesignation end,'') as playerStatus,
-b.chartPosition,
-b.chartRank,
-b.chartRole,
-b.thirdDownBack,
-b.goalLineBack,
-b.pr,
-b.kr,
+a.playerStatus,
+a.chartPosition,
+a.chartRank,
+a.chartRole,
+a.thirdDownBack,
+a.goalLineBack,
+a.pr,
+a.kr,
 
 a.age,
 a.experience,
 sameTeam,
+actualPoints,
+gamesPlayed,
 
-ifnull(case when b.predictionWeek = 1 then priorWeekPlayerStatus
-else priorWeekInjDesignation end,'') as priorWeekPlayerStatus,
-priorWeekChartPosition,
-priorWeekChartRank,
 
-case when ifnull(seasonGames,0) = 0 then 0
-    else seasonPoints/seasonGames end as seasonPoints,
-priorWeekPoints,
-seasonGames,
-priorGame,
 
-case when ifnull(seasonGames,0) = 0 then 0
-    else seasonTargets/seasonGames end as seasonTargets,
-priorWeekTargets,
-case when ifnull(seasonGames,0) = 0 then 0
-    else seasonRushes/seasonGames end as seasonRushes,
-priorWeekRushes,
-
-oppTeam,
-byeWeek,
 
 a.playerRating,
 a.playerSpeed,
@@ -144,74 +124,30 @@ t1.s3 as s3Rating,
 
 t1.k as kRating,
 	
-t2.qb1 as oppQb1Rating,
 	
-t2.rb1 as oppRb1Rating,
-t2.rb2 as oppRb2Rating,
-	
-t2.wr1 as oppWr1Rating,
-t2.wr2 as oppWr2Rating,
-t2.wr3 as oppWr3Rating,
-	
-t2.te1 as oppTe1Rating,
-t2.te2 as oppTe2Rating,
-	
-t2.lt as oppLtRating,
-t2.lg as oppLgRating,
-t2.c as oppCRating,
-t2.rg as oppRgRating,
-t2.rt as oppRtRating,
-	
-t2.de1 as oppDe1Rating,
-t2.de2 as oppDe2Rating,
-t2.dt1 as oppDt1Rating,
-t2.dt2 as oppDt2Rating,
-	
-t2.mlb1 as oppMlb1Rating,
-t2.mlb2 as oppMlb2Rating,
-t2.olb1 as oppOlb1Rating,
-t2.olb2 as oppOlb2Rating,
-	
-t2.cb1 as oppCb1Rating,
-t2.cb2 as oppCb2Rating,
-t2.cb3 as oppCb3Rating,
-	
-t2.s1 as oppS1Rating,
-t2.s2 as oppS2Rating,
-t2.s3 as oppS3Rating,
-	
-t2.k as oppKRating,	
-	
-c.actualPoints,
-c.gamePlayed,
-c.seasonDone,
+
 
 t1.hasThirdDownBack,
 t1.hasGoalLineBack,
-
-b.priorWeekBye as predictPriorBye,
-
-d.homeTeam,
-d.priorWeekBye,
-d.followWeekBye,
-d.oppPriorWeekBye,
-d.oppFollowWeekBye
+ifnull(rankingRank,9999) as rankingRank,
+ifnull(rankingTier,9999) as rankingTier,
+ifnull(rankingPosRank,9999) as rankingPosRank
 
 
-from leagueSims.weeklyModelPlayerData a
-join leagueSims.weeklyModelPredictWeekData b on b.predictionSeason = a.predictionSeason 
-	and b.playerId = a.playerId
-join leagueSims.weeklyModelPredictedWeekData c on c.predictionSeason = a.predictionSeason
-	and c.playerId = a.playerId and c.predictedWeek >= b.predictionWeek
-join leagueSims.weeklyModelPredictedWeekOppTeamData d on a.predictionSeason = d.predictionSeason
-	and a.playerId = d.playerId and b.predictionWeek = d.predictionWeek and c.predictedWeek = d.predictedWeek
-left join leagueSims.chartVerionPlayers t1 on a.predictionSeason = t1.cvSeason and b.chartVersion = t1.cvVersion and b.playerTeam = t1.cvTeam
-left join leagueSims.chartVerionPlayers t2 on a.predictionSeason = t2.cvSeason and b.chartVersion = t2.cvVersion and d.oppTeam = t2.cvTeam
+
+
+from seasonPredictions.modelPlayerData a
+
+
+left join seasonPredictions.chartVerionPlayers t1 on a.predictionSeason = t1.cvSeason and a.chartVersion = t1.cvVersion and a.playerTeam = t1.cvTeam
+left join scrapped_data2.fantasyProsRankings on a.predictionSEason = rankingSeason and
+	a.playerId = rankingPlayer and
+    ((a.chartVersion = rankingVersion and rankingSeason >= 2021) or
+    (rankingWeek = 0 and rankingSeason < 2021))
 where a.predictionSeason between %d and %d
-	and (b.predictionWeek = %d)
-	and a.fantasyPosition= '%s' '''
+	and a.playerPosition= '%s' '''
 
-    return pd.read_sql(sql % (season-3,season,week,position),con=conn)
+    return pd.read_sql(sql % (season-3,season,position),con=conn)
 
     
 

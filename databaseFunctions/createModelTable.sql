@@ -5,6 +5,7 @@ create table leagueSims.weeklyModelPlayerData
 	predictionSeason smallint,
 	playerId int,
 	playerName varchar(50),
+	fantasyPosition varchar(15),
 	
 	age tinyint,
 	experience tinyint,
@@ -21,7 +22,8 @@ create table leagueSims.weeklyModelPlayerData
 	playerAwareness tinyint,
 	playerInjury tinyint,
 	
-	primary key(predictionSeason,playerId)
+	primary key(predictionSeason,playerId),
+	index(fantasyPosition)
 );
 
 drop table if exists leagueSims.weeklyModelPredictWeekData;

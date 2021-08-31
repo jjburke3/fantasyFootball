@@ -9,8 +9,8 @@ sys.path.insert(0,'../dbConn')
 
 from DOConn import connection
 from DOsshTunnel import DOConnect
-for week in range(16,-1,-1):
-    for season in range(2020,2016,-1):
+for week in range(0,1,1):
+    for season in range(2021,2022,1):
         ##pull all necessary data
         with DOConnect() as tunnel:
             c, conn = connection(tunnel)
@@ -18,7 +18,7 @@ for week in range(16,-1,-1):
             conn.commit()
             conn.close()
 
-            for pos in ['QB','RB','WR','TE','D/ST','K']:
+            for pos in ['DST','K','QB','RB','WR','TE']:
                 print(str(season)+"-"+str(week)+"-"+pos)
                 c, conn = connection(tunnel)
                 modelData = meth.pullModelData(season,week,pos, conn)

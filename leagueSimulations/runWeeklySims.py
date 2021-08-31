@@ -16,11 +16,8 @@ from dbFuncs import InsertTable
 
 runCount = 50
 while True:
-    season = random.choice(range(2017,2021))
-
-    week = random.choice(range(0,17))
-    #season = 2020
-    #week = 0
+    season = 2021
+    week = 0
     print(season,week)
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
@@ -31,9 +28,9 @@ while True:
         result = c.fetchone()
         if result is None:
             None
-        elif result[0] >= 2000:
+        elif result[0] >= 5000:
             conn.close()
-            continue
+            break
         
         try:
             results = meth.pullResults(season,week,conn)
@@ -85,8 +82,8 @@ while True:
 
 
     print('start sims')
-    start = time.clock()
-    sim = leagueSimulation(season,rostersDict,replaceDict,results)
+    start = time.process_time()
+    sim = leagueSimulation(season,rostersDict,replaceDict,results,week)
     status = True
     fails = 0
     try:
@@ -103,9 +100,9 @@ while True:
     table2['Wins'] = [[x] for x in results['winWin']]
     table2['Losses'] = [[x] for x in results['winLoss']]
     table2['HighPoints'] = [[x] for x in results['weeklyHighPoints']]
-    print(time.clock()-start)
+    print(time.process_time()-start)
     for i in range(1,runCount):
-        start = time.clock()
+        start = time.process_time()
         status = True
         try:
             sim.simSeason()
@@ -126,7 +123,7 @@ while True:
         table2['Wins'] = table2.apply(lambda x: x['Wins'] + [results.loc[results.index==x['Names']].iloc[0]['winWin']],axis=1)
         table2['Losses'] = table2.apply(lambda x: x['Losses'] + [results.loc[results.index==x['Names']].iloc[0]['winLoss']],axis=1)
         table2['HighPoints'] = table2.apply(lambda x: x['HighPoints'] + [results.loc[results.index==x['Names']].iloc[0]['weeklyHighPoints']],axis=1)
-        print(time.clock()-start)
+        print(time.process_time()-start)
 
 
     sqlStatement = '''insert into leagueSims.standings values %s

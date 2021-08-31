@@ -1,23 +1,24 @@
 import random
 import numpy as np
 import math
-from filterPlayer import returnPlayer, returnLineupValues
+#from filterPlayer import returnPlayer, returnLineupValues
 
 
 
 class leagueSimulation(object):
 
-    def __init__(self, season, predictionValues, replacementValues, pastResults):
+    def __init__(self, season, predictionValues, replacementValues, pastResults, week):
         self.season = season
         self.pastResults = pastResults
         self.predictionValues = predictionValues
         self.replacementValues = replacementValues
+        self.week = week
 
         self.positions = [{'key' : 'QB', 'allow' : [0], 'replace' : 'QB'},
                      {'key' : 'RB', 'allow' : [1], 'replace' : 'RB'},
                      {'key' : 'WR', 'allow' : [2], 'replace' : 'WR'},
                      {'key' : 'TE', 'allow' : [3], 'replace' : 'TE'},
-                     {'key' : 'D/ST', 'allow' : [4], 'replace' : 'D/ST'},
+                     {'key' : 'D/ST', 'allow' : [4], 'replace' : 'DST'},
                      {'key' : 'K', 'allow' : [5], 'replace' : 'K'},
                      {'key' : 'RBWR1', 'allow' : [1,2], 'replace' : 'RBWR'},
                      {'key' : 'RBWR2', 'allow' : [1,2], 'replace' : 'RBWR'},
@@ -34,6 +35,8 @@ class leagueSimulation(object):
 
     def simSeason(self):
         resultsTable = self.pastResults.copy()
+        self.burkeAdjust = random.choice(range(1,6))/100
+        self.burkeAdjust = self.burkeAdjust*max(0,(7-self.week)/7)
         resultsTable['winPointsInitial'] = resultsTable['winPoints'].copy()
         resultsTable['winPoints'] = resultsTable.apply(lambda x:
                                                      x['winPoints'] if not self._isNoneNa(x['winPoints'])
@@ -163,14 +166,14 @@ class leagueSimulation(object):
         weekRoster = rosters[team+"-"+str(int(week))]
         weekRoster['totalRoster']['randNum'] = np.random.uniform(0,1,size=len(weekRoster['totalRoster'].index))
         self.playersUsed = []
-        lineup = [self._bestPlayer(pos,weekRoster,replacement[week]) for pos in self.positions]
+        lineup = [self._bestPlayer(pos,weekRoster,replacement[week],team) for pos in self.positions]
         #return sum([x['value'] for x in lineup])
         return sum(lineup)
 
-    def _bestPlayer(self, pos,roster,replace):
+    def _bestPlayer(self, pos,roster,replace,team):
         randMean = replace[pos['replace']]['replaceMean']
         randDistr = replace[pos['replace']]['replaceDistr']
-        rosIndex = roster['totalRoster'].apply(lambda x: returnPlayer(x.name,
+        rosIndex = roster['totalRoster'].apply(lambda x: self._returnPlayer(x.name,
                                                                             x['predictionValue'],
                                                                             x['playProb'],
                                                                             x['randNum'],
@@ -187,7 +190,11 @@ class leagueSimulation(object):
             bestPlayer = avail.loc[avail['predictionValue'].idxmax()]
             #playerName = str(bestPlayer['playerId'])+"-"+pos['key']
             self.playersUsed.append(bestPlayer.name)
-            playerValue = random.choice([float(x) for x in bestPlayer['predictionDistr']])
+            if team == 'JJ Burke':
+                adjust = 1 - (self.burkeAdjust * (random.uniform(0.5,2)))
+            else:
+                adjust = 1
+            playerValue = random.choice([float(x)*float(adjust) for x in bestPlayer['predictionDistr']])
         #return {'player' : playerName, 'value' : playerValue}
         return playerValue
 
