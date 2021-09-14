@@ -110,10 +110,17 @@ def pullLeagueData(year,week,conn):
             except Exception as e:
                 print(str(e))
 
-        
-                             
+    updateStatement = '''update la_liga_data.wins
+                    join (
+                        select winSeason as oppSeason, winWeek as oppWeek, winTeam as opp, winPoints as oppPoint from la_liga_data.wins
+                        where winSeason = %d and winWeek = %d) a on winSeason = oppSeason and winWeek = oppWeek
+                        and winOpp = opp
+                        set winPointsAgs = oppPoint, 
+                        winWin = case when winPoints > oppPoint then 1 else 0 end, 
+                        winLoss = case when winPoints < oppPoint then 1 else 0 end, 
+                        winTie = case when winPoints = oppPoint then 1 else 0 end''' % (year,week))
                 
             
 
-    return [sql1.returnStatement(), sqlWins.returnStatement()]
+    return [sql1.returnStatement(), sqlWins.returnStatement(),updateStatement]
 
