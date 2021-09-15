@@ -20,6 +20,7 @@ from injuries import pullInjuries
 from mysportsfeeds import returnWeekStats
 from pullNflSchedule import pullLeagueSchedule
 from leagueResults import pullLeagueData
+from updateQueries import updateFunc
 
 now = datetime.utcnow() - timedelta(hours=4)
 
@@ -95,6 +96,17 @@ if (daysSinceWeekFinish == 1 and time == 'Night'):
             for statement in sql:
                 c.execute(statement)
                 conn.commit()
+        except Exception as e:
+            traceback.print_exc()
+        
+        try:
+            sql = updateFunc()
+            for sqlCode in sql:
+                try:
+                    c.execute(sqlCode)
+                    conn.commit()
+                except Exception as e:
+                    print(str(e))
         except Exception as e:
             traceback.print_exc()
         if currentWeek <= 17:

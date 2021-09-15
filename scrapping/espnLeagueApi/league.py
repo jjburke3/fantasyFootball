@@ -348,3 +348,29 @@ class League(object):
 
             draftPicks.append(pickData)
         return draftPicks
+
+    def currentRosters(self):
+        params = {
+            'view':'mRoster'
+        }
+
+        r = requests.get(self.ENDPOINT % (self.year, self.league_id), cookies = self.cookies, params = params)
+
+        data = r.json()
+
+        rosters = []
+
+        teams = data['teams']
+
+        for team in teams:
+            teamId = team['id']
+            for player in team['roster']['entries']:
+                playerData = player['playerPoolEntry']['player']
+                rosters.append({'teamId' : teamId,
+                                'playerESPNId' : player['playerId'],
+                                'playerName' : playerData['fullName'],
+                                'playerPosition' : playerPos[playerData['defaultPositionId']],
+                                'playerTeam' : nflTeams[playerData['proTeamId']],
+                                'playerSlot' : lineupSlots[player['lineupSlotId']]
+                                })
+        return rosters
