@@ -118,7 +118,7 @@ def pullLeagueData(year,week,conn):
                         set winPointsAgs = oppPoint, 
                         winWin = case when winPoints > oppPoint then 1 else 0 end, 
                         winLoss = case when winPoints < oppPoint then 1 else 0 end, 
-                        winTie = case when winPoints = oppPoint then 1 else 0 end''' % (year,week))
+                        winTie = case when winPoints = oppPoint then 1 else 0 end''' % (year,week)
                 
             
 
