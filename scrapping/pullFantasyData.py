@@ -85,7 +85,7 @@ else:
 daysSinceWeekFinish = (now.date() - finishedWeeks.iloc[0].maxDate).days
 finishedWeek = finishedWeeks.iloc[0].nflWeek
 finishedSeason = finishedWeeks.iloc[0].nflSeason
-
+print(daysSinceWeekFinish,time)
 
 ## week end pull fantasy and stats data
 if (daysSinceWeekFinish == 1 and time == 'Night'):
@@ -119,8 +119,7 @@ if (daysSinceWeekFinish == 1 and time == 'Night'):
                 traceback.print_exc() 
 
         conn.close()
-
-
+        
 ## pull injury and depth chart data
 if daysToWeekStart <= 50 and time != 'Night':
     print('go')

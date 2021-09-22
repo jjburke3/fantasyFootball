@@ -21,7 +21,7 @@ def remove_non_ascii(text):
 def pullFPRankings(conn,
                 season, week, day, time,
                 versionNo = 'NULL',
-                url = 'https://www.fantasypros.com/nfl/rankings/ppr-cheatsheets.php',
+                url = 'https://www.fantasypros.com/nfl/rankings/ros-ppr-flex.php',
                 timestamp = 'NULL'):
     teams = getTeamId(conn)
     players = getPlayerId(season,conn,fp=True)
@@ -78,7 +78,8 @@ def pullFPRankings(conn,
             fpId = player['player_id']
             position = player['player_position_id']
             ranking = player['rank_ecr']
-            tier = player['tier']
+            if 'tier' in player:
+                tier = player['tier']
             positionRanking = player['pos_rank']
         positionRanking = re.sub(r"[A-Za-z]","",positionRanking)
         teamId = teams.teamId(team,conn)

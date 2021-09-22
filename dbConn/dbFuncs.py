@@ -341,7 +341,7 @@ class getPlayerId:
                 pId = "'" + pfrId + "'"
             else:
                 pId = pfrId
-            c.execute("insert into refData.playerIds values (%s, %s, %s, %s, %s, %s, %s, %s, '%s')" %
+            c.execute("insert into refData.playerIds values (%s, %s, %s, nullif(%s,''), %s, %s, %s, %s, '%s')" %
                       (str(playerId), str(espnId), str(statsId), str(dcId),
                        str(injuryId), str(pId), str(nbcId), str(fpId),
                        re.sub(r"(?<!\\)(')","\\'",playerName[0])))
@@ -404,7 +404,7 @@ class getPlayerId:
                     return self._addPlayer(playerName, conn, espnId, depthChartId, injuryId, statsId, pfrId, nbcId, fpId)
             elif depthChartId != 'NULL' and depthChartId != '':
                 if playerEntry['depthChartsId'] is None:
-                    c.execute("update refData.playerIds set depthChartsId = '%s' where playerId = %d" % (depthChartId,playerEntry['playerId']))
+                    c.execute("update refData.playerIds set depthChartsId = nullif('%s','') where playerId = %d" % (depthChartId,playerEntry['playerId']))
                     conn.commit()
                     return playerEntry['playerId']
                 else:

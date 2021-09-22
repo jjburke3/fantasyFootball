@@ -218,7 +218,22 @@ where a.predictionSeason between %d and %d
 
 def pullCurrentRosters(season, week, conn):
     if week > 1:
-        sql = ''' select playerTeam, a.playerId,
+        if season >= 2021:
+            sql = '''select rosterTeam as playerTeam, a.rosterPlayer as playerId,
+                    case a.rosterPosition when 'QB' then 0
+                    when 'RB' then 1 when 'WR' then 2
+                    when 'TE' then 3 when 'D/ST' then 4
+                    when 'K' then 5 else 10 end as playerPosition, 
+                    predictedWeek, 
+                    ifnull(modelPrediction,0) as predictionValue,
+                    ifnull(modelPossibleValues,0) as predictionDistr,
+                ifnull(modelPlayProb,0) as playProb
+                from la_liga_data.currentRoster a
+                left join leagueSims.modelPredictions b on rosterWeek = predictionWeek and modelSeason = rosterYear
+                                    and a.rosterPlayer = b.playerId
+                where rosterYear = %d and rosterWeek = %d '''
+        else:
+            sql = ''' select playerTeam, a.playerId,
                     case a.playerPosition when 'QB' then 0
                     when 'RB' then 1 when 'WR' then 2
                     when 'TE' then 3 when 'D/ST' then 4

@@ -10,7 +10,7 @@ import traceback
 from DOConn import connection
 from DOsshTunnel import DOConnect
 
-from pullRankings import pullRankings
+from pullRankings import pullFPRankings
 
 
 now = datetime.utcnow() - timedelta(hours=4)
@@ -19,23 +19,8 @@ now = datetime.utcnow() - timedelta(hours=4)
 
 
 rankingsList = [
-        {'year' : 2016,
-         'link' : 'https://web.archive.org/web/20160822171245/https://www.fantasypros.com/nfl/rankings/ppr-cheatsheets.php'
-         },
-        {'year' : 2017,
-         'link' : 'https://web.archive.org/web/20170830160039/https://www.fantasypros.com/nfl/rankings/ppr-cheatsheets.php'
-         },
-        {'year' : 2018,
-         'link' : 'https://web.archive.org/web/20180825115958/https://www.fantasypros.com/nfl/rankings/ppr-cheatsheets.php'
-         },
-        {'year' : 2019,
-         'link' : 'https://web.archive.org/web/20190903001905/https://www.fantasypros.com/nfl/rankings/ppr-cheatsheets.php'
-         },
-        {'year' : 2020,
-         'link' : 'https://web.archive.org/web/20200830104840/https://www.fantasypros.com/nfl/rankings/ppr-cheatsheets.php'
-         },
         {'year' : 2021,
-         'link' : 'https://www.fantasypros.com/nfl/rankings/ppr-cheatsheets.php'
+         'link' : 'https://web.archive.org/web/20210914032218/https://www.fantasypros.com/nfl/rankings/ros-ppr-flex.php'
          }
     ]
 
@@ -53,7 +38,7 @@ for rankingYear in rankingsList:
             print(versionNo)
             sql = pullFPRankings(conn,
                                   rankingYear['year'],
-                                  0,
+                                  2,
                                   '',
                                   '',
                                   versionNo,

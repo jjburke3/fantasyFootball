@@ -15,10 +15,8 @@ from DOsshTunnel import DOConnect
 from dbFuncs import InsertTable
 
 
-def runSims(season,week,runCount = 50)
+def runSims(season,week,runCount = 50):
     while True:
-        season = 2021
-        week = 0
         print(season,week)
         with DOConnect() as tunnel:
             c, conn = connection(tunnel)
@@ -145,7 +143,8 @@ def runSims(season,week,runCount = 50)
                         standThirdPlace = standThirdPlace + values(standThirdPlace),
                         standBye = standBye + values(standBye),
                         standWeeklyHighPoints = standWeeklyHighPoints + values(standWeeklyHighPoints),
-                        standWeeklyHighPointsArray = concat(standWeeklyHighPointsArray,',',values(standWeeklyHighPointsArray));
+                        standWeeklyHighPointsArray = concat(standWeeklyHighPointsArray,',',values(standWeeklyHighPointsArray)),
+                        updateTime = current_timestamp();
 
 
                     '''
@@ -153,7 +152,7 @@ def runSims(season,week,runCount = 50)
         sqlAdd = ''
         for i, row in resultsTable.iterrows():
             sqlAdd += ('''(%d,%d,%d,'%s',%d,'%s',%d,'%s',%f,
-                            '%s',%f, %d,%d,%d,%d,%d,%d,%d,%d,%d,'%s'),''' %
+                            '%s',%f, %d,%d,%d,%d,%d,%d,%d,%d,%d,'%s',current_timestamp()),''' %
                        (season,week,runCount,
                         row.name,row['winWin'], ','.join([str(int(x)) for x in table2.loc[table2['Names']==i].iloc[0]['Wins']]),
                         row['winLoss'], ','.join([str(int(x)) for x in table2.loc[table2['Names']==i].iloc[0]['Losses']]),

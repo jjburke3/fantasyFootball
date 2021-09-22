@@ -55,3 +55,21 @@ index(player)
 -- table for each yearly schedule
 
 -- table for league teams
+
+-- table for current roster
+
+create table la_liga_data.currentRoster
+(
+	rosterId int auto_increment primary key,
+	rosterYear smallint,
+	rosterWeek tinyint,
+	rosterTeam varchar(20),
+	rosterSlot varchar(12),
+	rosterPlayer int,
+	rosterESPNId int,
+	rosterNflTeam int,
+	rosterPosition varchar(12),
+	dataCreate datetime,
+	index(rosterPlayer),
+	index(rosterYear, rosterWeek)
+);

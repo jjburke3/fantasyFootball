@@ -49,12 +49,20 @@ daysSinceWeekFinish = (now.date() - finishedWeeks.iloc[0].maxDate).days
 finishedWeek = finishedWeeks.iloc[0].nflWeek
 finishedSeason = finishedWeeks.iloc[0].nflSeason
 
-## get current rosters
+print(year,'-',currentWeek)
 
+## get current rosters
+'''
 with DOConnect() as tunnel:
     c, conn = connection(tunnel)
-    pullCurrentLineups(year,conn)
-
+    sql = pullCurrentLineups(year,conn,currentWeek)
+    try:
+        for statement in sql:
+            c.execute(statement)
+    except Exception as e:
+        print(str(e))
+        traceback.print_exc()
+    conn.commit()
     conn.close()
 
 ## build sim data tables
@@ -70,7 +78,7 @@ with DOConnect() as tunnel:
 
 ## run projection models
 buildWeeklyModels(year,currentWeek)
-
+'''
 ## run simulations
 
 runSims(year,currentWeek)

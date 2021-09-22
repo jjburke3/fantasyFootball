@@ -55,12 +55,12 @@ def pullCurrentLineups(year,conn,week):
         playerNumber = players.playerId([player['playerName'],
                                                      str(teamNumber),
                                                      player['playerPosition'],
-                                                     str(season)],
+                                                     str(year)],
                                                       conn,espnId=player['playerESPNId'])
         sql.appendRow([["NULL",''],##rowId
                        [str(year),''],##rosterYear
                        [str(week),''],#rosterWeek
-                       [teamIds[player['teamdId']],'string'],#rosterTeam
+                       [teamIds[player['teamId']],'string'],#rosterTeam
                        [player['playerSlot'],'string'],#rosterSlot
                        [str(playerNumber),''],#playerId
                        [str(player['playerESPNId']),''],#espnId

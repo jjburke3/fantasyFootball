@@ -36,7 +36,7 @@ class leagueSimulation(object):
     def simSeason(self):
         resultsTable = self.pastResults.copy()
         self.burkeAdjust = random.choice(range(1,6))/100
-        self.burkeAdjust = self.burkeAdjust*max(0,(7-self.week)/7)
+        self.burkeAdjust = 0
         resultsTable['winPointsInitial'] = resultsTable['winPoints'].copy()
         resultsTable['winPoints'] = resultsTable.apply(lambda x:
                                                      x['winPoints'] if not self._isNoneNa(x['winPoints'])

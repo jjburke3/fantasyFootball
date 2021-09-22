@@ -1,7 +1,12 @@
 -- populate table initially with all new entries for current week
-set @maxSeason = (select max(predictionSeason) from leagueSims.weeklyModelPlayerData);
-set @maxWeek = (select max(predictionWeek) from leagueSims.weeklyModelPredictWeekData where predictionSeason = @maxSeason);
 
+
+delimiter //
+drop procedure if exists leagueSims.modelDataTables//
+create procedure leagueSims.modelDataTables(maxSeason int, maxWeek int)
+begin
+set @maxSeason = maxSeason;
+set @maxWeek = maxWeek;
 delete from leagueSims.weeklyModelPredictWeekData
 where predictionSeason = @maxSeason
  and predictionWeek = @maxWeek;
@@ -149,8 +154,6 @@ group by predictionSeason, weekNum, playerId
 on duplicate key update chartVersion = values(chartVersion);
 
 
-
-
 update leagueSims.weeklyModelPredictWeekData a
 join (
 select chartVersion, chartPlayer,
@@ -185,6 +188,12 @@ playerPosition = case when playerPos = 'PK' then 'K' else playerPos end,
 a.chartPosition = case when b.chartPosition = 'PK' then 'K' else b.chartPosition end, 
  playerStatus =case when injuryStatus in ('','IR','PUP','Suspended') then injuryStatus
  else 'Injured' end, 
+ injDesignation = case when predictionSeason = @maxSeason and predictionWeek = @maxWeek
+ then 
+ case when injuryStatus = 'Suspended' then 'S'
+	when injuryStatus = 'COV' then 'C19'
+ else injuryStatus end
+ end,
  a.chartRank = b.chartRank, 
   a.chartRole = case when b.chartRole = 'Starter' then 'Starter' else 'Non-Starter' end,
     a.thirdDownBack = b.thirdDownBack, goalLineBack = goalLine,
@@ -207,6 +216,8 @@ join (select injSeason, injWeek, injPlayer,
 	  group by 1,2,3 ) b on injSeason = predictionSeason and injWeek + 1 = predictionWeek
 	and injPlayer = playerId
 set a.priorWeekInjDesignation = b.injDesignation;
+
+
 	
 update leagueSims.weeklyModelPredictWeekData
 set playerPosition = case 
@@ -221,7 +232,8 @@ update leagueSims.weeklyModelPredictWeekData a
 join leagueSims.weeklyModelPredictWeekData b on a.predictionSeason = b.predictionSeason
 	and a.predictionWeek = b.predictionWeek + 1 and a.playerId = b.playerId
 set a.priorWeekPlayerStatus = b.playerStatus, a.priorWeekChartPosition = b.chartPosition,
-	a.priorWeekChartRank = b.chartRank;
+	a.priorWeekChartRank = b.chartRank,
+	a.priorWeekInjDesignation = case when a.predictionSeason >= 2021 then b.injDesignation else a.priorWeekInjDesignation end;
 	
 update leagueSims.weeklyModelPredictWeekData a
 left join refData.playerNames b on a.playerId = b.playerId and a.playerTeam = b.playerTeam 
@@ -579,3 +591,7 @@ drop table if exists leagueSims.tempMadden;
 drop table if exists leagueSims.tempChartData;
 drop table if exists leagueSims.playerStats;
 drop table if exists leagueSims.chartVersion;
+
+end//
+
+delimiter ;
