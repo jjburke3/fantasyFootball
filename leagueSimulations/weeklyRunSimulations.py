@@ -52,7 +52,7 @@ finishedSeason = finishedWeeks.iloc[0].nflSeason
 print(year,'-',currentWeek)
 
 ## get current rosters
-'''
+
 with DOConnect() as tunnel:
     c, conn = connection(tunnel)
     sql = pullCurrentLineups(year,conn,currentWeek)
@@ -78,7 +78,7 @@ with DOConnect() as tunnel:
 
 ## run projection models
 buildWeeklyModels(year,currentWeek)
-'''
+
 ## run simulations
 
 runSims(year,currentWeek)
