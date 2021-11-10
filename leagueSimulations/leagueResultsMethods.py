@@ -23,7 +23,7 @@ def pullResults(season, week, conn):
          union select %d, weekNum, winTeam,
          null,null,null,null,null,null
          from (select distinct winTeam from la_liga_data.wins where winSeason = %d) a
-         join refData.seasonWeeks b on weekNum between 1 and 16
+         join refData.seasonWeeks b on weekNum between 1 and 17
          where weekNum not in
              (select distinct winWeek from la_liga_data.wins where winSeason = %d)
              and weekNum not in

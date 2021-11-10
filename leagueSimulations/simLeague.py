@@ -48,7 +48,8 @@ class leagueSimulation(object):
                                                            axis=1)
         
         resultsTable['winPointsAgs'] = resultsTable.apply(lambda x:
-                                                  0 if x['winOpp'] is None else
+                                                  resultsTable[resultsTable.winWeek == 14].sort_values(by=['winPoints'],ascending=['False']).iloc[6,:]['winPoints'] if (x['winWeek'] == 14 and x['winSeason'] >= 2021)
+                                                  else 0 if x['winOpp'] is None else
                                                   x['winPointsAgs'] if not self._isNoneNa(x['winPointsAgs'])
                                                   else resultsTable[(
                                                       (resultsTable['winSeason'] == x['winSeason']) &
@@ -71,8 +72,7 @@ class leagueSimulation(object):
                                                   else 1 if x['winPoints'] == x['winPointsAgs']
                                                   else 0,
                                                   axis=1)
-
-        playerTeams = resultsTable[resultsTable.winWeek <= 13].groupby('winTeam')['winWin','winLoss','winPoints'].sum()
+        playerTeams = resultsTable[resultsTable.winWeek <= 14].groupby('winTeam')['winWin','winLoss','winPoints'].sum()
         if self.season > 2017:
             playoffTeams = playerTeams.sort_values(by=['winWin','winLoss','winPoints'],ascending=[False,True,False]).iloc[0:5,:]
             pointsIn = playerTeams[~playerTeams.index.isin(playoffTeams.index)].sort_values(by=['winPoints'],ascending=[False]).iloc[0:1,:]
@@ -91,29 +91,29 @@ class leagueSimulation(object):
         
         playerTeams['playoffs'] = [int(x) for x in playerTeams.index.isin(playoffTeams.index)]
 
-        ##sim week 14
+        ##sim week 15
         if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[2]) &
-                               (resultsTable['winWeek']==14)].iloc[0]['winPoints'] >
+                               (resultsTable['winWeek']==15)].iloc[0]['winPoints'] >
             resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[5]) &
-                               (resultsTable['winWeek']==14)].iloc[0]['winPoints']):
+                               (resultsTable['winWeek']==15)].iloc[0]['winPoints']):
             quarter1 = 2
         else:
             quarter1 = 5
 
         
         if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[3]) &
-                               (resultsTable['winWeek']==14)].iloc[0]['winPoints'] >
+                               (resultsTable['winWeek']==15)].iloc[0]['winPoints'] >
             resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[4]) &
-                               (resultsTable['winWeek']==14)].iloc[0]['winPoints']):
+                               (resultsTable['winWeek']==15)].iloc[0]['winPoints']):
             quarter2 = 3
         else:
             quarter2 = 4
             
-        ## sim week 15
+        ## sim week 16
         if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[0]) &
-                               (resultsTable['winWeek']==15)].iloc[0]['winPoints'] >
+                               (resultsTable['winWeek']==16)].iloc[0]['winPoints'] >
             resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[quarter2]) &
-                               (resultsTable['winWeek']==15)].iloc[0]['winPoints']):
+                               (resultsTable['winWeek']==16)].iloc[0]['winPoints']):
             semi1 = 0
             semi1Loss = quarter2
         else:
@@ -121,21 +121,21 @@ class leagueSimulation(object):
             semi1Loss = 0
             
         if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[1]) &
-                               (resultsTable['winWeek']==15)].iloc[0]['winPoints'] >
+                               (resultsTable['winWeek']==16)].iloc[0]['winPoints'] >
             resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[quarter1]) &
-                               (resultsTable['winWeek']==15)].iloc[0]['winPoints']):
+                               (resultsTable['winWeek']==16)].iloc[0]['winPoints']):
             semi2 = 1
             semi2Loss = quarter1
         else:
             semi2 = quarter1
             semi2Loss = 1
 
-        ## sim week 16
+        ## sim week 17
         
         if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[semi1]) &
-                               (resultsTable['winWeek']==16)].iloc[0]['winPoints'] >
+                               (resultsTable['winWeek']==17)].iloc[0]['winPoints'] >
             resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[semi2]) &
-                               (resultsTable['winWeek']==16)].iloc[0]['winPoints']):
+                               (resultsTable['winWeek']==17)].iloc[0]['winPoints']):
             champ = semi1
             runup = semi2
         else:
@@ -144,9 +144,9 @@ class leagueSimulation(object):
             
         
         if (resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[semi1Loss]) &
-                               (resultsTable['winWeek']==16)].iloc[0]['winPoints'] >
+                               (resultsTable['winWeek']==17)].iloc[0]['winPoints'] >
             resultsTable.loc[(resultsTable['winTeam']==playoffTeams.index[semi2Loss]) &
-                               (resultsTable['winWeek']==16)].iloc[0]['winPoints']):
+                               (resultsTable['winWeek']==17)].iloc[0]['winPoints']):
             thirdplace = semi1Loss
         else:
             thirdplace = semi2Loss

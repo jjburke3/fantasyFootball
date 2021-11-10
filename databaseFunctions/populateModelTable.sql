@@ -104,7 +104,7 @@ join (select distinct playerYear as listYear from refData.playerNames) b on pred
 join (select 1 as listWeek 
 		union select 2 union select 3 union select 4 union select 5 union select 6 union select 7
 			union select 8 union select 9 union select 10 union select 11 union select 12 union select 13
-			union select 14 union select 15 union select 16) week on 1 = 1
+			union select 14 union select 15 union select 16 union select 17) week on 1 = 1
 left join scrapped_data2.playerStats on predictionSeason = statYear and listWeek = statWeek and statPlayer = playerId
 on duplicate key update actualPoints = values(actualPoints),
 	gamePlayed = values(gamePlayed),
@@ -338,7 +338,7 @@ ifnull(target,0) as priorWeekTargets,
  from (select distinct playerId, playerYear from refData.playerNames where playerId in 
 			(select distinct statPlayer from scrapped_data2.playerStats)
 		) b
-		join refData.seasonWeeks on weekNum between 1 and 16
+		join refData.seasonWeeks on weekNum between 1 and 17
         left join scrapped_data2.playerStats on statYear = playerYear and statWeek = weekNum
         and statPlayer = playerId) a, (select @match := '', @seasonPoints := 0, @seasonRushes := 0,
 	@seasonGames := 0, @seasonTargets := 0) t 
