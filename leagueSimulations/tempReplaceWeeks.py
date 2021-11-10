@@ -26,9 +26,9 @@ for currentWeek in range(9,-1,-1):
     '''
     with DOConnect() as tunnel:
         c, conn = connection(tunnel)
-        sql = '''delete from leagueSims.standings
+        sql = delete from leagueSims.standings
                  where standYear = %d
-                 and standWeek = %d'''%(year,currentWeek)
+                 and standWeek = %d%(year,currentWeek)
         c.execute(sql)
         conn.commit()
         conn.close()
